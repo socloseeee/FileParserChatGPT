@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1162</width>
+    <height>895</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">.QTextEdit
+{
+	border: 1px solid #37384d;
+}
+
+.QSpinBox
+{
+	color:white;	
+	padding: 4px;
+}
+
+
+.QLabel
+{
+	border: 1px solid yellow;
+}
+                                 
+
+
+QWidget
+{
+	background-color: #232430;
+	color: #000000;
+	border-color: #000000;
+
+}
+
+
+/*-----QLabel-----*/
+QLabel
+{
+	background-color: #232430;
+	color: #c1c1c1;
+	border-color: #000000;
+}
+
+
+/*-----QPushButton-----*/
+QPushButton
+{
+	background-color: #ff9c2b;
+	color: #000000;
+	font-weight: bold;
+	border-style: solid;
+	border-color: #000000;
+	padding: 6px;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: #ffaf5d;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: #dd872f;
+
+}
+
+
+/*-----QToolButton-----*/
+QToolButton
+{
+	background-color: #ff9c2b;
+	color: #000000;
+	font-weight: bold;
+	border-style: solid;
+	border-color: #000000;
+	padding: 6px;
+
+}
+
+
+QToolButton::hover
+{
+	background-color: #ffaf5d;
+
+}
+
+
+QToolButton::pressed
+{
+	background-color: #dd872f;
+
+}
+
+
+/*-----QLineEdit-----*/
+QLineEdit
+{
+	background-color: #38394e;
+	color: #c1c1c1;
+	border-style: solid;
+	border-width: 1px;
+	border-color: #4a4c68;
+
+}
+
+
+/*-----QTableView-----*/
+QTableView, 
+QHeaderView, 
+QTableView::item 
+{
+	background-color: #232430;
+	color: #c1c1c1;
+
+}
+
+
+QTableView::item:selected 
+{ 
+    background-color: #41424e;
+    color: #c1c1c1;
+
+}
+
+
+QHeaderView::section:horizontal 
+{
+    background-color: #232430;
+	border: 1px solid #37384d;
+	padding: 5px;
+
+}
+
+
+QTableView::indicator{
+	background-color: #1d1d28;
+	border: 1px solid #37384d;
+
+}
+
+
+QTableView::indicator:checked{
+	image:url(&quot;./ressources/check.png&quot;); /*To replace*/
+	background-color: #1d1d28;
+
+}
+
+/*-----QTabWidget-----*/
+QTabWidget::pane 
+{ 
+    border: none;
+
+}
+
+
+QTabWidget::tab-bar 
+{
+    left: 5px; 
+
+}
+
+
+QTabBar::tab 
+{
+    color: #c1c1c1;
+    min-width: 1px;
+	padding-left: 25px;
+	margin-left:-22px;
+    height: 28px;
+	border: none;
+
+}
+
+
+QTabBar::tab:selected 
+{
+    color: #c1c1c1;
+	font-weight: bold;
+    height: 28px;
+
+}
+
+
+QTabBar::tab:!first 
+{
+    margin-left: -20px;
+
+}
+
+
+QTabBar::tab:hover 
+{
+    color: #DDD;
+
+}
+
+
+/*-----QScrollBar-----*/
+QScrollBar:horizontal 
+{
+    background-color: transparent;
+    height: 8px;
+    margin: 0px;
+    padding: 0px;
+
+}
+
+
+QScrollBar::handle:horizontal 
+{
+    border: none;
+	min-width: 100px;
+    background-color: #56576c;
+
+}
+
+
+QScrollBar::add-line:horizontal, 
+QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal, 
+QScrollBar::sub-page:horizontal 
+{
+    width: 0px;
+    background-color: transparent;
+
+}
+
+
+QScrollBar:vertical 
+{
+    background-color: transparent;
+    width: 8px;
+    margin: 0;
+
+}
+
+
+QScrollBar::handle:vertical 
+{
+    border: none;
+	min-height: 100px;
+    background-color: #56576c;
+
+}
+
+
+QScrollBar::add-line:vertical, 
+QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical, 
+QScrollBar::sub-page:vertical 
+{
+    height: 0px;
+    background-color: transparent;
+
+}
+
+QCalendarWidget
+{
+	 border: 5px solid yellow;
+}
+</string>
+  </property>
+  <property name="animated">
+   <bool>true</bool>
+  </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>850</y>
+      <width>1141</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="pushButton_2">
+       <property name="text">
+        <string>Choose File</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton">
+       <property name="text">
+        <string>Start</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>1141</width>
+      <height>381</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QTextEdit" name="textEdit"/>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget_3">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>10</y>
+      <width>1141</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="font">
+        <font>
+         <family>DejaVu Serif</family>
+         <pointsize>18</pointsize>
+         <weight>75</weight>
+         <italic>false</italic>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>ТЕКСТ ИЗ ФАЙЛА</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget_20">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>530</y>
+      <width>1141</width>
+      <height>311</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_21">
+     <item>
+      <widget class="QTextEdit" name="textEdit_2"/>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>460</y>
+      <width>1141</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_12">
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="font">
+          <font>
+           <family>Open Sans</family>
+           <pointsize>27</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>© OAIT YZB 2023</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
