@@ -61,22 +61,24 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.image_path:
             self.extracted_text.setText(self.extracted_text.toPlainText() + "\n")
             if os.path.exists(self.image_path):
-
+                self.extracted_text.setText(self.extracted_text.toPlainText() + "\n")
+                print(self.extracted_text.toPlainText())
                 # Остановить предыдущий поток, если он существует
                 if self.gpt_thread and self.gpt_thread.isRunning():
                     self.gpt_thread.terminate()
                     self.gpt_thread.wait()
 
                 # Создание и запуск нового потока
-                self.gpt_thread = GptThreadSummarise(self.text, self.extension)
+                self.gpt_thread = GptThreadSummarise(self.extracted_text.toPlainText(), self.extension)
                 self.gpt_thread.gpt_result.connect(self.update_summary_text)
                 self.gpt_thread.start()
-
+                self.image_path = None
             else:
                 fileNotFound()
-        elif self.extracted_text.toPlainText():
+        elif self.extracted_text.toPlainText() and not self.image_path:
             self.extracted_text.setText(self.extracted_text.toPlainText() + "\n")
-            self.text = self.extracted_text.toPlainText() if self.extracted_text.toPlainText().count("\n") == 1 else self.extracted_text.toPlainText()[self.extracted_text.toPlainText()[:-2].rfind("\n"):]
+            self.text = self.extracted_text.toPlainText() if self.extracted_text.toPlainText().count(
+                "\n") == 1 else self.extracted_text.toPlainText()[self.extracted_text.toPlainText()[:-2].rfind("\n"):]
             print(self.text)
             # Остановить предыдущий поток, если он существует
             if self.gpt_thread and self.gpt_thread.isRunning():
@@ -112,10 +114,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 text = text_extractor.extract_text()
                 self.text = text
                 self.extension = text_extractor.extension
-                self.extracted_text.setText(text)
+                self.extracted_text.setText(self.extracted_text.toPlainText() + "\n" + text)
                 with open("output.txt", "w", encoding="UTF-8") as file:
                     file.write(text)
-            self.image_path = None
 
 
 def main():
