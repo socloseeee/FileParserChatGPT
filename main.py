@@ -67,6 +67,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.menu.addAction(action)
             self.theme_group.addAction(action)
 
+        self.start_window.tabWidget.currentChanged.connect(self.tabCreate)
+
         action = QAction("Только суммаризация", self, checkable=True)
         self.summarization = self.start_window.menu_3
         self.summarization.addAction(action)
@@ -79,7 +81,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.is_summarisation = True
         else:
             self.is_summarisation = False
-
 
     def tabCreate(self):
         cur = self.sender().tabText(self.sender().currentIndex())
@@ -113,7 +114,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.gpt_thread.wait()
 
             # Создание и запуск нового потока
-            self.gpt_thread = GptThreadChatting(self.text) if not self.is_summarisation else GptThreadSummarise(self.text, self.extension)
+            self.gpt_thread = GptThreadChatting(self.text) if not self.is_summarisation else GptThreadSummarise(
+                self.text, self.extension)
             self.gpt_thread.gpt_result.connect(self.update_summary_text)
             self.gpt_thread.start()
             self.user_field.clear()
@@ -159,7 +161,7 @@ def main():
         pass
 
     app = QApplication(sys.argv)  # Новый экземпляр QApplication
-    apply_stylesheet(app, theme='dark_lightgreen.xml')
+    apply_stylesheet(app, theme='dark_medical.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('GptChat')
 
