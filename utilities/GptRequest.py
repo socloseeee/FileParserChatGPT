@@ -22,6 +22,7 @@ class GptThreadSummarise(QThread):
                     provider=g4f.Provider.GeekGpt,
                     stream=True
                 )
+                self.gpt_result.emit("\nБот: ", 2)
                 for message in response:
                     self.gpt_result.emit(message, 0)
                 self.gpt_result.emit("\n\n", 0)
@@ -47,6 +48,7 @@ class GptThreadChatting(QThread):
                     provider=g4f.Provider.GeekGpt,
                     stream=True
                 )
+                self.gpt_result.emit("\nБот: ", 0)
                 for message in response:
                     self.gpt_result.emit(message, 0)
                 self.gpt_result.emit("\n\n", 0)

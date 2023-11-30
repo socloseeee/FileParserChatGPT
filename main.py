@@ -1,16 +1,14 @@
 import os
 import sys
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QFile, Qt
-from PyQt5.QtWidgets import QApplication, QRadioButton, QWidget, QVBoxLayout, QAction, QActionGroup, QMenu, QGridLayout
-from qt_material import apply_stylesheet, QtStyleTools, list_themes
-
-from utilities.GptRequest import GptThreadSummarise, GptThreadChatting
-from utilities.TextFeatures import TextExtractor
-from utilities.GuiHelper import FileDialog, fileNotFound, OutputLogger, isChosen
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QApplication, QWidget, QAction, QActionGroup
+from qt_material import apply_stylesheet, list_themes
 
 from GUI.MainWindow import Ui_MainWindow
+from utilities.GptRequest import GptThreadSummarise, GptThreadChatting
+from utilities.GuiHelper import FileDialog, fileNotFound, OutputLogger, isChosen
+from utilities.TextFeatures import TextExtractor
 
 OUTPUT_LOGGER_STDOUT = OutputLogger(sys.stdout, OutputLogger.Severity.DEBUG)
 OUTPUT_LOGGER_STDERR = OutputLogger(sys.stderr, OutputLogger.Severity.ERROR)
@@ -36,11 +34,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # QtStyleTools.add_menu_theme(self, parent=self, menu=self.menu)
 
-        self.extracted_text = self.start_window.textEdit
+        self.chat_field = self.start_window.textEdit
+        self.chat_field.setMinimumHeight(50)
         self.text = ""
         self.extension = ""
-        self.summary_text = self.start_window.textEdit_2
-        self.summary_text_text = ""
+        self.user_field = self.start_window.textEdit_2
+        self.chat_field_text = ""
         self.pushButton = self.start_window.pushButton
         self.pushButton_2 = self.start_window.pushButton_2
         self.Image = None
@@ -68,59 +67,69 @@ class MainWindow(QtWidgets.QMainWindow):
             self.menu.addAction(action)
             self.theme_group.addAction(action)
 
-        # Устанавливаем виджет в качестве центрального
-        # self.setCentralWidget(widget)
+        action = QAction("Только суммаризация", self, checkable=True)
+        self.summarization = self.start_window.menu_3
+        self.summarization.addAction(action)
+        self.is_chosen_file = False
+        self.is_summarisation = False
+        self.summarization.triggered.connect(self.funcSum)
 
+    def funcSum(self):
+        if not self.is_summarisation:
+            self.is_summarisation = True
+        else:
+            self.is_summarisation = False
+
+
+    def tabCreate(self):
+        cur = self.sender().tabText(self.sender().currentIndex())
+        if cur == "+":
+            self.sender().setTabText(self.sender().currentIndex(), f'Чат {self.start_window.tabWidget.count()}')
+            chat_widget = self.create_chat_widget()
+            self.sender().addTab(chat_widget, "+")
+            self.sender().setCurrentIndex(self.sender().count() + 1)
+
+    def create_chat_widget(self):
+        new_chat_widget = QWidget(self)
+        return new_chat_widget
 
     def changeTheme(self):
         selected = self.theme_group.checkedAction().text()
         apply_stylesheet(self, theme=selected)
 
     def start_script(self):
-        if self.image_path:
-            self.extracted_text.setText(self.extracted_text.toPlainText() + "\n")
-            if os.path.exists(self.image_path):
-                self.extracted_text.setText(self.extracted_text.toPlainText() + "\n")
-                print(self.extracted_text.toPlainText())
-                # Остановить предыдущий поток, если он существует
-                if self.gpt_thread and self.gpt_thread.isRunning():
-                    self.gpt_thread.terminate()
-                    self.gpt_thread.wait()
-
-                # Создание и запуск нового потока
-                self.gpt_thread = GptThreadSummarise(self.extracted_text.toPlainText(), self.extension)
-                self.gpt_thread.gpt_result.connect(self.update_summary_text)
-                self.gpt_thread.start()
-                self.image_path = None
+        if self.user_field.toPlainText():
+            self.text = self.user_field.toPlainText()
+            if self.is_summarisation:
+                self.chat_field_text += f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
             else:
-                fileNotFound()
-        elif self.extracted_text.toPlainText() and not self.image_path:
-            self.extracted_text.setText(self.extracted_text.toPlainText() + "\n")
-            self.text = self.extracted_text.toPlainText() if self.extracted_text.toPlainText().count(
-                "\n") == 1 else self.extracted_text.toPlainText()[self.extracted_text.toPlainText()[:-2].rfind("\n"):]
-            print(self.text)
+                self.chat_field_text += f"Я: {self.text}\n"
+            # self.chat_field.setText(f"Я: {self.text}\n")
+            self.user_field.clear()
+            print(self.user_field.toPlainText())
             # Остановить предыдущий поток, если он существует
             if self.gpt_thread and self.gpt_thread.isRunning():
                 self.gpt_thread.terminate()
                 self.gpt_thread.wait()
 
             # Создание и запуск нового потока
-            self.gpt_thread = GptThreadChatting(self.text)
+            self.gpt_thread = GptThreadChatting(self.text) if not self.is_summarisation else GptThreadSummarise(self.text, self.extension)
             self.gpt_thread.gpt_result.connect(self.update_summary_text)
             self.gpt_thread.start()
+            self.user_field.clear()
+            self.is_chosen_file = False
         else:
             isChosen()
 
-    def finishedAction(self):
-        self.summary_text.setText(self.summary_text.toPlainText() + "\n")
-
     def update_summary_text(self, text, error):
         if error == 0:
-            self.summary_text_text += text
-            self.summary_text.setText(self.summary_text_text)
-            # LabelStretcher(self.summary_text)
+            # Добавляем текст с новой строки и префиксом, например, "Бот:"
+            self.chat_field_text += text
+            # Обновляем текст виджета
+            self.chat_field.setText(self.chat_field_text)
         else:
-            print(f"Ошибка при запросе к API: {text}")
+            self.chat_field_text += f"\nАдмин: Ошибка при запросе к API: {text}\n\n"
+            print(f"\nАдмин: Ошибка при запросе к API: {text}\n\n")
 
     def browse_folder(self):
         fileName = FileDialog(
@@ -130,10 +139,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if fileName:
             self.image_path = fileName
             with TextExtractor(self.image_path) as text_extractor:
+                self.is_chosen_file = True
                 text = text_extractor.extract_text()
                 self.text = text
                 self.extension = text_extractor.extension
-                self.extracted_text.setText(self.extracted_text.toPlainText() + "\n" + text)
+                self.user_field.setText(self.text)
                 with open("output.txt", "w", encoding="UTF-8") as file:
                     file.write(text)
 
@@ -151,7 +161,7 @@ def main():
     app = QApplication(sys.argv)  # Новый экземпляр QApplication
     apply_stylesheet(app, theme='dark_lightgreen.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
-    window.setWindowTitle('Summarize')
+    window.setWindowTitle('GptChat')
 
     # window.setFixedSize()
     window.setMinimumSize(1162, 935)
