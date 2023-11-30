@@ -1,22 +1,16 @@
 import os
 import sys
-import asyncio
-import threading
 
-import g4f
-from PyQt5 import QtWidgets
-from PyQt5.Qt import QThread
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QApplication, QStyleFactory
-from qt_material import apply_stylesheet, QtStyleTools
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import QFile, Qt
+from PyQt5.QtWidgets import QApplication, QRadioButton, QWidget, QVBoxLayout, QAction, QActionGroup, QMenu, QGridLayout
+from qt_material import apply_stylesheet, QtStyleTools, list_themes
 
 from utilities.GptRequest import GptThreadSummarise, GptThreadChatting
-# from utilities.GptRequest import callGpt
 from utilities.TextFeatures import TextExtractor
-from utilities.GuiHelper import FileDialog, fileNotFound, LabelStretcher, OutputLogger, isChosen
+from utilities.GuiHelper import FileDialog, fileNotFound, OutputLogger, isChosen
 
 from GUI.MainWindow import Ui_MainWindow
-
 
 OUTPUT_LOGGER_STDOUT = OutputLogger(sys.stdout, OutputLogger.Severity.DEBUG)
 OUTPUT_LOGGER_STDERR = OutputLogger(sys.stderr, OutputLogger.Severity.ERROR)
@@ -40,6 +34,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.stacked)
         self.stacked.addWidget(self.start_window)
 
+        # QtStyleTools.add_menu_theme(self, parent=self, menu=self.menu)
+
         self.extracted_text = self.start_window.textEdit
         self.text = ""
         self.extension = ""
@@ -56,6 +52,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_2.clicked.connect(self.browse_folder)  # Выполнить функцию browse_folder
 
         self.gpt_thread = None
+
+        self.menu = self.start_window.menu
+        self.menu.triggered.connect(self.changeTheme)
+
+        # Создаем группу для радиокнопок
+        self.theme_group = QActionGroup(self)
+        self.theme_group.setExclusive(True)
+
+        # Добавляем радиокнопки в группу и в подменю
+        themes = list_themes()
+        for theme in themes:
+            action = QAction(theme, self, checkable=True)
+            action.setActionGroup(self.theme_group)
+            self.menu.addAction(action)
+            self.theme_group.addAction(action)
+
+        # Устанавливаем виджет в качестве центрального
+        # self.setCentralWidget(widget)
+
+
+    def changeTheme(self):
+        selected = self.theme_group.checkedAction().text()
+        apply_stylesheet(self, theme=selected)
 
     def start_script(self):
         if self.image_path:
@@ -99,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if error == 0:
             self.summary_text_text += text
             self.summary_text.setText(self.summary_text_text)
-            #LabelStretcher(self.summary_text)
+            # LabelStretcher(self.summary_text)
         else:
             print(f"Ошибка при запросе к API: {text}")
 
@@ -133,7 +152,9 @@ def main():
     apply_stylesheet(app, theme='dark_lightgreen.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('Summarize')
-    window.setFixedSize(1162, 895)
+
+    # window.setFixedSize()
+    window.setMinimumSize(1162, 935)
     # window.setMinimumSize(window.width(), window.height())
     # window.setMaximumSize(window.width(), window.height())
     window.show()  # Показываем окно
