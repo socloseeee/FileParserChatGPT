@@ -4,6 +4,4 @@
 
 ![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/3905138d-7289-44e9-8ca6-052ae95df826)
 
-![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/b086fba0-9aa3-422c-8279-ce0cc085dbac)
-
 ![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/78e401d9-1a08-4aa3-a532-0911642beb25)
