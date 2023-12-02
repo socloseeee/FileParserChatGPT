@@ -69,6 +69,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         if self.user_field.toPlainText():
             global is_summarisation
             self.text = self.user_field.toPlainText()
+            print(self.text, self.chat_field_text)
             if is_summarisation:
                 self.chat_field_text += f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
             else:
@@ -240,7 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
         serialized_data = {
             'Chat': "",  # obj.chat_field_text
             'summarisedVal': "",  # summarizer.summarize(obj.chat_field_text, ratio=0.1)
-            'ChatName': f"Чат {len(self.all_chats_container) - 1}"
+            'ChatName': f"Чат {self.main_window.tabWidget.count() - 1}"
         }
 
         connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
@@ -261,7 +262,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cur = self.sender().tabText(self.sender().currentIndex())
         if cur == "+":
             self.sender().setTabText(self.sender().currentIndex(), f'Чат {self.main_window.tabWidget.count()}')
-            chat_widget = self.create_chat_widget(None, None)
+            chat_widget = self.create_chat_widget("", "")
             self.sender().addTab(chat_widget, "+")
             self.sender().setCurrentIndex(self.sender().count() + 1)
             self.exchangeOld_to_database()
