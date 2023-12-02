@@ -29,3 +29,4 @@ The program is designed to:
 - **Executable:** ![EXE](https://img.shields.io/badge/EXE-black?style=for-the-badge&logo=windows&logoColor=white)
   
 ![Program Screenshot](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/1f6ac797-97e1-4cbb-964b-113c4c154e9c)
+![Пример GIF](static/work_app.gif)
