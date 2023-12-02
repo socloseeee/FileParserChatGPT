@@ -1,3 +1,5 @@
+![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/1f6ac797-97e1-4cbb-964b-113c4c154e9c)
+
 ![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/89a0428a-0e9e-4e47-9895-5758704c384b)
 
 ![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/b2a9fa1f-6542-4335-9e9c-967b2ba80a6d)
