@@ -5,6 +5,7 @@ from PyQt5.QtCore import pyqtSignal, QThread
 
 class GptThreadSummarise(QThread):
     gpt_result = pyqtSignal(str, int)
+    updateDB = pyqtSignal()
 
     def __init__(self, text, extension):
         super().__init__()
@@ -22,16 +23,18 @@ class GptThreadSummarise(QThread):
                     provider=g4f.Provider.GeekGpt,
                     stream=True
                 )
-                self.gpt_result.emit("\nБот: ", 2)
+                self.gpt_result.emit("\nБот: ", 0)
                 for message in response:
                     self.gpt_result.emit(message, 0)
                 self.gpt_result.emit("\n\n", 0)
+                self.updateDB.emit()
         except Exception as e:
             self.gpt_result.emit(str(e), 1)
 
 
 class GptThreadChatting(QThread):
     gpt_result = pyqtSignal(str, int)
+    updateDB = pyqtSignal()
 
     def __init__(self, text):
         super().__init__()
@@ -52,5 +55,6 @@ class GptThreadChatting(QThread):
                 for message in response:
                     self.gpt_result.emit(message, 0)
                 self.gpt_result.emit("\n\n", 0)
+                self.updateDB.emit()
         except Exception as e:
             self.gpt_result.emit(str(e), 1)

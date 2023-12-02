@@ -1,122 +1,91 @@
 import os
 import sys
+import sqlite3
+
+from summa import summarizer
 
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QWidget, QAction, QActionGroup
 from qt_material import apply_stylesheet, list_themes
+from PyQt5.QtWidgets import QApplication, QAction, QActionGroup
 
-from GUI.MainWindow import Ui_MainWindow
-from utilities.GptRequest import GptThreadSummarise, GptThreadChatting
-from utilities.GuiHelper import FileDialog, fileNotFound, OutputLogger, isChosen
 from utilities.TextFeatures import TextExtractor
+from utilities.GuiHelper import FileDialog, isChosen
+from GUI.TabMainWindow import Ui_MainWindow, Ui_InsideTabWindow
+from utilities.GptRequest import GptThreadSummarise, GptThreadChatting
 
-OUTPUT_LOGGER_STDOUT = OutputLogger(sys.stdout, OutputLogger.Severity.DEBUG)
-OUTPUT_LOGGER_STDERR = OutputLogger(sys.stderr, OutputLogger.Severity.ERROR)
-
-sys.stdout = OUTPUT_LOGGER_STDOUT
-sys.stderr = OUTPUT_LOGGER_STDERR
+# globals
+is_summarisation = False
+tabIndex = 0
 
 
-class start_window(QtWidgets.QMainWindow, Ui_MainWindow):
+class main_window(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
-        super(start_window, self).__init__(parent)
+        super(main_window, self).__init__(parent)
         self.setupUi(self)
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class tabbed_window(QtWidgets.QMainWindow, Ui_InsideTabWindow):
+    def __init__(self, parent=None):
+        super(tabbed_window, self).__init__(parent)
+        self.setupUi(self)
+
+
+class InsideTabWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.stacked = QtWidgets.QStackedWidget(self)
-        self.start_window = start_window(self)
-        self.setCentralWidget(self.stacked)
-        self.stacked.addWidget(self.start_window)
-
-        # QtStyleTools.add_menu_theme(self, parent=self, menu=self.menu)
-
-        self.chat_field = self.start_window.textEdit
-        self.chat_field.setMinimumHeight(50)
+        # global vars
         self.text = ""
+        self.sumChat = None
         self.extension = ""
-        self.user_field = self.start_window.textEdit_2
-        self.chat_field_text = ""
-        self.pushButton = self.start_window.pushButton
-        self.pushButton_2 = self.start_window.pushButton_2
-        self.Image = None
         self.image_path = None
+        self.gpt_thread = None
+        self.chat_field_text = ""
+        self.is_chosen_file = False
+
+        # windows
+        self.stacked = QtWidgets.QStackedWidget(self)
+        self.tabbed_window = tabbed_window(self)
+        self.setCentralWidget(self.stacked)
+        self.stacked.addWidget(self.tabbed_window)
+        self.main_window = main_window()
+
+        # text_fields
+        self.chat_field = self.tabbed_window.textEdit
+        self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
+        self.user_field = self.tabbed_window.textEdit_2
+
+        # buttons
+        self.pushButton = self.tabbed_window.pushButton
+        self.pushButton_2 = self.tabbed_window.pushButton_2
 
         # Кнопка старт и функция реагирующая на нажатия и перенаправляющая в метод start_script
         self.pushButton.clicked.connect(self.start_script)
+
         # Кнопка выбора картинки и функция реагирующая на нажатия и перенаправляющая в метод start_script
         self.pushButton_2.clicked.connect(self.browse_folder)  # Выполнить функцию browse_folder
 
-        self.gpt_thread = None
-
-        self.menu = self.start_window.menu
-        self.menu.triggered.connect(self.changeTheme)
-
-        # Создаем группу для радиокнопок
-        self.theme_group = QActionGroup(self)
-        self.theme_group.setExclusive(True)
-
-        # Добавляем радиокнопки в группу и в подменю
-        themes = list_themes()
-        for theme in themes:
-            action = QAction(theme, self, checkable=True)
-            action.setActionGroup(self.theme_group)
-            self.menu.addAction(action)
-            self.theme_group.addAction(action)
-
-        self.start_window.tabWidget.currentChanged.connect(self.tabCreate)
-
-        action = QAction("Только суммаризация", self, checkable=True)
-        self.summarization = self.start_window.menu_3
-        self.summarization.addAction(action)
-        self.is_chosen_file = False
-        self.is_summarisation = False
-        self.summarization.triggered.connect(self.funcSum)
-
-    def funcSum(self):
-        if not self.is_summarisation:
-            self.is_summarisation = True
-        else:
-            self.is_summarisation = False
-
-    def tabCreate(self):
-        cur = self.sender().tabText(self.sender().currentIndex())
-        if cur == "+":
-            self.sender().setTabText(self.sender().currentIndex(), f'Чат {self.start_window.tabWidget.count()}')
-            chat_widget = self.create_chat_widget()
-            self.sender().addTab(chat_widget, "+")
-            self.sender().setCurrentIndex(self.sender().count() + 1)
-
-    def create_chat_widget(self):
-        new_chat_widget = QWidget(self)
-        return new_chat_widget
-
-    def changeTheme(self):
-        selected = self.theme_group.checkedAction().text()
-        apply_stylesheet(self, theme=selected)
-
     def start_script(self):
         if self.user_field.toPlainText():
+            global is_summarisation
             self.text = self.user_field.toPlainText()
-            if self.is_summarisation:
+            if is_summarisation:
                 self.chat_field_text += f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
             else:
                 self.chat_field_text += f"Я: {self.text}\n"
-            # self.chat_field.setText(f"Я: {self.text}\n")
             self.user_field.clear()
             print(self.user_field.toPlainText())
+
             # Остановить предыдущий поток, если он существует
             if self.gpt_thread and self.gpt_thread.isRunning():
                 self.gpt_thread.terminate()
                 self.gpt_thread.wait()
 
             # Создание и запуск нового потока
-            self.gpt_thread = GptThreadChatting(self.text) if not self.is_summarisation else GptThreadSummarise(
+            self.gpt_thread = GptThreadChatting(self.text) if not is_summarisation else GptThreadSummarise(
                 self.text, self.extension)
             self.gpt_thread.gpt_result.connect(self.update_summary_text)
+            self.gpt_thread.updateDB.connect(self.UpdateChat)
             self.gpt_thread.start()
             self.user_field.clear()
             self.is_chosen_file = False
@@ -129,9 +98,41 @@ class MainWindow(QtWidgets.QMainWindow):
             self.chat_field_text += text
             # Обновляем текст виджета
             self.chat_field.setText(self.chat_field_text)
+            self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
         else:
-            self.chat_field_text += f"\nАдмин: Ошибка при запросе к API: {text}\n\n"
-            print(f"\nАдмин: Ошибка при запросе к API: {text}\n\n")
+            if text != "\nБот: ":
+                print(text.strip())
+                self.chat_field_text += f"\nАдмин: Ошибка при запросе к API: {text}\n\n"
+                self.chat_field.setText(self.chat_field_text)
+                self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
+                print(f"\nАдмин: Ошибка при запросе к API: {text}\n\n")
+
+    def UpdateChat(self):
+        global tabIndex
+        print(self.chat_field_text)
+        serialized_data = {
+            'Chat': self.chat_field.toPlainText(),
+            'summarisedVal': summarizer.summarize(self.chat_field.toPlainText(), ratio=0.05)
+        }
+
+        connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+        cursor = connection.cursor()
+
+        # Insert serialized data into the table
+        cursor.execute('''
+            UPDATE tabWidgets 
+            SET Chat = ?,
+                summarisedVal = ? 
+            WHERE "Index" = ?
+        ''', (
+            serialized_data['Chat'],
+            serialized_data['summarisedVal'],
+            tabIndex + 1,
+            )
+        )
+
+        connection.commit()
+        connection.close()
 
     def browse_folder(self):
         fileName = FileDialog(
@@ -150,6 +151,137 @@ class MainWindow(QtWidgets.QMainWindow):
                     file.write(text)
 
 
+class MainWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # vars
+        self.all_chats_container = []
+
+        # windows
+        self.stacked = QtWidgets.QStackedWidget(self)
+        self.main_window = main_window(self)
+        self.setCentralWidget(self.stacked)
+        self.stacked.addWidget(self.main_window)
+
+        # menu
+        self.menu = self.main_window.menu
+        self.menu.triggered.connect(self.changeTheme)
+
+        # Добавляем радиокнопки в группу и в подменю
+        themes = list_themes()
+
+        # Создаем группу для радиокнопок
+        self.theme_group = QActionGroup(self)
+        self.theme_group.setExclusive(True)
+        for theme in themes:
+            action = QAction(theme, self, checkable=True)
+            action.setActionGroup(self.theme_group)
+            self.menu.addAction(action)
+            self.theme_group.addAction(action)
+        action = QAction("Только суммаризация", self, checkable=True)
+        self.summarization = self.main_window.menu_3
+        self.summarization.addAction(action)
+        self.summarization.triggered.connect(self.funcSum)
+
+        # tabs
+        print(self.load_from_database())
+        for index, chat, summarized_val, chat_name in self.load_from_database():
+            chat_widget = self.create_chat_widget(chat, summarized_val)
+            self.main_window.tabWidget.addTab(chat_widget, chat_name)
+        self.main_window.tabWidget.currentChanged.connect(self.tabCreate)
+
+    def save_to_database(self):
+        print(self.main_window.tabWidget.currentWidget().objectName())
+        serialized_data = {
+            'Chat': "",  # obj.chat_field_text
+            'summarisedVal': "",  # summarizer.summarize(obj.chat_field_text, ratio=0.1)
+            'ChatName': "+"
+        }
+
+        connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+        cursor = connection.cursor()
+
+        # Insert serialized data into the table
+        cursor.execute('''
+            INSERT INTO tabWidgets (Chat, summarisedVal, ChatName)
+            VALUES (?, ?, ?)
+        ''', (
+            serialized_data['Chat'],
+            serialized_data['summarisedVal'],
+            serialized_data['ChatName'],
+        )
+                       )
+
+        connection.commit()
+        connection.close()
+
+    def load_from_database(self):
+        connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+        cursor = connection.cursor()
+
+        # Select all rows from the table
+        cursor.execute('SELECT * FROM tabWidgets')
+        rows = cursor.fetchall()
+
+        connection.close()
+
+        return rows
+
+    def funcSum(self):
+        global is_summarisation
+        if not is_summarisation:
+            is_summarisation = True
+        else:
+            is_summarisation = False
+
+    def exchangeOld_to_database(self):
+        print(self.main_window.tabWidget.currentWidget().objectName())
+        serialized_data = {
+            'Chat': "",  # obj.chat_field_text
+            'summarisedVal': "",  # summarizer.summarize(obj.chat_field_text, ratio=0.1)
+            'ChatName': f"Чат {len(self.all_chats_container) - 1}"
+        }
+
+        connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+        cursor = connection.cursor()
+
+        # Insert serialized data into the table
+        cursor.execute('''
+            UPDATE tabWidgets SET ChatName = ? WHERE ChatName = "+"
+        ''', (serialized_data['ChatName'],)
+                       )
+
+        connection.commit()
+        connection.close()
+
+    def tabCreate(self):
+        global tabIndex
+        tabIndex = self.main_window.tabWidget.currentIndex()
+        cur = self.sender().tabText(self.sender().currentIndex())
+        if cur == "+":
+            self.sender().setTabText(self.sender().currentIndex(), f'Чат {self.main_window.tabWidget.count()}')
+            chat_widget = self.create_chat_widget(None, None)
+            self.sender().addTab(chat_widget, "+")
+            self.sender().setCurrentIndex(self.sender().count() + 1)
+            self.exchangeOld_to_database()
+            self.save_to_database()
+            self.all_chats_container.append(chat_widget)
+            print(self.all_chats_container)
+
+    def create_chat_widget(self, chat, sum_val):
+        new_chat = InsideTabWindow()
+        new_chat.chat_field_text = chat
+        new_chat.chat_field.setText(chat)
+        new_chat.sumChat = sum_val
+        self.all_chats_container.append(new_chat)
+        return new_chat
+
+    def changeTheme(self):
+        selected = self.theme_group.checkedAction().text()
+        apply_stylesheet(self, theme=selected)
+
+
 def main():
     try:
         # Включить в блок try/except, для Mac/Linux
@@ -164,11 +296,7 @@ def main():
     apply_stylesheet(app, theme='dark_medical.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('GptChat')
-
-    # window.setFixedSize()
     window.setMinimumSize(1162, 935)
-    # window.setMinimumSize(window.width(), window.height())
-    # window.setMaximumSize(window.width(), window.height())
     window.show()  # Показываем окно
     app.exec_()  # и запускаем приложение
 
