@@ -1,9 +1,31 @@
-![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/1f6ac797-97e1-4cbb-964b-113c4c154e9c)
+# ChatGPT GUI + Files2TextSummarization
 
-![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/89a0428a-0e9e-4e47-9895-5758704c384b)
+## Navigation:
 
-![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/b2a9fa1f-6542-4335-9e9c-967b2ba80a6d)
+1. [Problem](#problem)
+2. [Libraries](#libraries)
+3. [What the Program Does](#what-the-program-does)
+4. [Program Overview](#program-overview)
 
-![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/3905138d-7289-44e9-8ca6-052ae95df826)
+### 1. Problem <a name="problem"></a>
+The challenges addressed by this project include:
+- Enabling the use of ChatGPT from a local machine without the need for OpenAPI authentication.
+- Efficiently extracting and summarizing information from text files without having to open them individually.
 
-![image](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/78e401d9-1a08-4aa3-a532-0911642beb25)
+### 2. Libraries <a name="libraries"></a>
+- [![g4f](https://img.shields.io/badge/g4f-black?style=for-the-badge&logo=openAI&logoColor=white)]("https://pypi.org/project/g4f/") - A library for interfacing with ChatGPT.
+- [![PyQt5](https://img.shields.io/badge/pyqt5-red?style=for-the-badge&logo=qt&logoColor=white)]("https://pypi.org/project/PyQt5") - PyQt5 for building the graphical user interface.
+- [![sqlite3](https://img.shields.io/badge/sqlite3-gold?style=for-the-badge&logo=sqlite&logoColor=black)](https://www.sqlite.org/index.html) - SQLite for managing and storing chat information.
+
+### 3. What the Program Does <a name="what-the-program-does"></a>
+The program is designed to:
+- Parse text files in various formats (over 10 popular formats) to generate summarized information about their content.
+- Allow users to utilize the ChatGPT API for answering questions.
+- Store information about chats in a structured manner.
+- Provide users with the flexibility to choose the theme or topic of interest.
+
+### 4. Program Overview <a name="program-overview"></a>
+
+- **Executable:** ![EXE](https://img.shields.io/badge/EXE-black?style=for-the-badge&logo=windows&logoColor=white)
+  
+![Program Screenshot](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/1f6ac797-97e1-4cbb-964b-113c4c154e9c)
