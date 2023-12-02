@@ -1,5 +1,7 @@
 # ChatGPT GUI + Files2TextSummarization
 
+![Пример GIF](static/work_app.gif)
+
 ## Navigation:
 
 1. [Problem](#problem)
@@ -29,4 +31,4 @@ The program is designed to:
 - **Executable:** ![EXE](https://img.shields.io/badge/EXE-black?style=for-the-badge&logo=windows&logoColor=white)
   
 ![Program Screenshot](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/1f6ac797-97e1-4cbb-964b-113c4c154e9c)
-![Пример GIF](static/work_app.gif)
+![Program Screenshot](https://github.com/socloseeee/FileParserChatGPT/assets/65871712/2b5429eb-276f-4ba1-967c-16ebe0b20b29)
