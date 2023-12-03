@@ -21,7 +21,8 @@ class GptThreadSummarise(QThread):
                     model=g4f.models.default,
                     messages=[{"role": "user", "content": text}],
                     provider=g4f.Provider.GeekGpt,
-                    stream=True
+                    stream=True,
+                    timeout=3,
                 )
                 self.gpt_result.emit("\nБот: ", 0)
                 for message in response:
@@ -51,7 +52,7 @@ class GptThreadChatting(QThread):
                     provider=g4f.Provider.GeekGpt,
                     stream=True
                 )
-                self.gpt_result.emit("\nБот: ", 0)
+                self.gpt_result.emit(f"\nБот: ", 0)
                 for message in response:
                     self.gpt_result.emit(message, 0)
                 self.gpt_result.emit("\n\n", 0)

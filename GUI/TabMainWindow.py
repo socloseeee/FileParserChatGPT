@@ -1,7 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'MainWindow2.ui'
@@ -44,9 +42,12 @@ class Ui_MainWindow(object):
         self.menu_2.setObjectName("menu_2")
         self.menu_3 = QtWidgets.QMenu(self.menuBar)
         self.menu_3.setObjectName("menu_3")
+        self.menu_4 = QtWidgets.QMenu(self.menuBar)
+        self.menu_4.setObjectName("menu_4")
         MainWindow.setMenuBar(self.menuBar)
         self.menuBar.addAction(self.menu.menuAction())
         self.menuBar.addAction(self.menu_3.menuAction())
+        self.menuBar.addAction(self.menu_4.menuAction())
         self.menuBar.addAction(self.menu_2.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -59,6 +60,7 @@ class Ui_MainWindow(object):
         self.menu.setTitle(_translate("MainWindow", "Темы"))
         self.menu_2.setTitle(_translate("MainWindow", "Языки"))
         self.menu_3.setTitle(_translate("MainWindow", "Суммаризация"))
+        self.menu_4.setTitle(_translate("MainWindow", "Очистить/вернуть чаты"))
 
 
 class Ui_InsideTabWindow(object):

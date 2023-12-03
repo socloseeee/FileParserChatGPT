@@ -2,6 +2,8 @@ import os
 import sys
 import sqlite3
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QTextCursor
 from summa import summarizer
 
 from PyQt5 import QtWidgets
@@ -34,7 +36,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # global vars
+        # vars
         self.text = ""
         self.sumChat = None
         self.extension = ""
@@ -42,6 +44,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         self.gpt_thread = None
         self.chat_field_text = ""
         self.is_chosen_file = False
+
 
         # windows
         self.stacked = QtWidgets.QStackedWidget(self)
@@ -52,7 +55,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
 
         # text_fields
         self.chat_field = self.tabbed_window.textEdit
-        self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
+        self.chat_field.setReadOnly(True)
         self.user_field = self.tabbed_window.textEdit_2
 
         # buttons
@@ -75,6 +78,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
             else:
                 self.chat_field_text += f"Я: {self.text}\n"
             self.user_field.clear()
+            self.chat_field.setText(self.chat_field_text)
             print(self.user_field.toPlainText())
 
             # Остановить предыдущий поток, если он существует
@@ -129,8 +133,8 @@ class InsideTabWindow(QtWidgets.QMainWindow):
             serialized_data['Chat'],
             serialized_data['summarisedVal'],
             tabIndex + 1,
-            )
         )
+                       )
 
         connection.commit()
         connection.close()
@@ -157,6 +161,9 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         # vars
+        self.clear = False
+        self.Return = False
+        self.removing_tabs = False
         self.all_chats_container = []
 
         # windows
@@ -180,17 +187,118 @@ class MainWindow(QtWidgets.QMainWindow):
             action.setActionGroup(self.theme_group)
             self.menu.addAction(action)
             self.theme_group.addAction(action)
+
         action = QAction("Только суммаризация", self, checkable=True)
         self.summarization = self.main_window.menu_3
         self.summarization.addAction(action)
         self.summarization.triggered.connect(self.funcSum)
 
+        self.theme_group_2 = QActionGroup(self)
+        self.theme_group_2.setExclusive(True)
+
+        action = QAction("Очистить все чаты", self, checkable=True)
+        self.clearOrReturnChats = self.main_window.menu_4
+        self.clearOrReturnChats.addAction(action)
+        self.theme_group_2.addAction(action)
+
+        action = QAction("Вернуть чаты", self, checkable=True)
+        self.clearOrReturnChats.addAction(action)
+        self.theme_group_2.addAction(action)
+
+        self.clearOrReturnChats.triggered.connect(self.funcClearOrReturn)
+
         # tabs
-        print(self.load_from_database())
-        for index, chat, summarized_val, chat_name in self.load_from_database():
+        print(self.load_from_database("tabWidgets"))
+        for index, chat, summarized_val, chat_name in self.load_from_database("tabWidgets"):
+            self.removing_tabs = False
             chat_widget = self.create_chat_widget(chat, summarized_val)
             self.main_window.tabWidget.addTab(chat_widget, chat_name)
         self.main_window.tabWidget.currentChanged.connect(self.tabCreate)
+
+    def funcClearOrReturn(self, action):
+        selected = action.text()
+        source_connection = sqlite3.connect('database/db.sqlite3')
+        source_cursor = source_connection.cursor()
+
+        if selected == "Очистить все чаты" and not self.clear:
+            self.clear = True
+            self.Return = False
+            # Выбор и сохранение данных из tabWidgets в backupWidgets
+            source_cursor.execute('SELECT * FROM tabWidgets')
+            rows_to_transfer = list(map(lambda x: x[1:], source_cursor.fetchall()))
+
+            source_cursor.execute('DELETE FROM backupWidgets')
+            source_connection.commit()
+
+            source_cursor.executemany(
+                'INSERT INTO backupWidgets(Chat, summarisedVal, ChatName) VALUES (?, ?, ?)', rows_to_transfer
+            )
+            source_connection.commit()
+
+            # Очистка данных в tabWidgets
+            source_cursor.execute('DELETE FROM tabWidgets')
+            source_connection.commit()
+
+            # Добавление пустых чатов в tabWidgets
+            source_cursor.execute(
+                'INSERT INTO tabWidgets (Chat, summarisedVal, ChatName) VALUES (?, ?, ?), (?, ?, ?)',
+                ("", "", "Чат 1", "", "", "+")
+            )
+            source_connection.commit()
+
+            # Обновление виджета tabWidget
+            # self.main_window.tabWidget.clear()
+            self.remove_all_tabs()
+
+            # Загрузка данных из tabWidgets и добавление их в tabWidget
+            for index, chat, summarized_val, chat_name in source_cursor.execute("SELECT * FROM tabWidgets"):
+                self.removing_tabs = False
+                chat_widget = self.create_chat_widget(chat, summarized_val)
+                self.main_window.tabWidget.addTab(chat_widget, chat_name)
+
+            source_connection.close()
+            # action.setChecked(False)
+
+
+        elif selected == "Вернуть чаты" and not self.Return:
+            self.Return = True
+            self.clear = False
+            # Очистка данных в tabWidgets
+            source_cursor.execute('DELETE FROM tabWidgets')
+            source_connection.commit()
+
+            # Выбор и сохранение данных из backupWidgets в tabWidgets
+            source_cursor.execute('SELECT * FROM backupWidgets')
+            rows_to_transfer = list(map(lambda x: x[1:], source_cursor.fetchall()))
+
+            source_cursor.executemany(
+                'INSERT INTO tabWidgets(Chat, summarisedVal, ChatName) VALUES (?, ?, ?)', rows_to_transfer
+            )
+            source_connection.commit()
+
+            # Обновление виджета tabWidget
+            # self.main_window.tabWidget.clear()
+            self.remove_all_tabs()
+
+            # Загрузка данных из tabWidgets и добавление их в tabWidget
+            for index, chat, summarized_val, chat_name in source_cursor.execute("SELECT * FROM tabWidgets"):
+                self.removing_tabs = False
+                chat_widget = self.create_chat_widget(chat, summarized_val)
+                self.main_window.tabWidget.addTab(chat_widget, chat_name)
+
+            source_connection.close()
+            #
+            # action.setChecked(False)
+
+    def remove_all_tabs(self):
+        # Добавляем флаг, указывающий, что идет процесс удаления вкладок
+        self.removing_tabs = True
+        while self.main_window.tabWidget.count() > 0:
+            widget = self.main_window.tabWidget.widget(0)
+            self.main_window.tabWidget.removeTab(0)
+            widget.setParent(None)
+        # Удаляем флаг после завершения удаления вкладок
+        del self.removing_tabs
 
     def save_to_database(self):
         print(self.main_window.tabWidget.currentWidget().objectName())
@@ -217,12 +325,12 @@ class MainWindow(QtWidgets.QMainWindow):
         connection.commit()
         connection.close()
 
-    def load_from_database(self):
+    def load_from_database(self, table):
         connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
         cursor = connection.cursor()
 
         # Select all rows from the table
-        cursor.execute('SELECT * FROM tabWidgets')
+        cursor.execute(f'SELECT * FROM {table}')
         rows = cursor.fetchall()
 
         connection.close()
@@ -258,6 +366,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def tabCreate(self):
         global tabIndex
+        if hasattr(self, 'removing_tabs') and self.removing_tabs:
+            return
         tabIndex = self.main_window.tabWidget.currentIndex()
         cur = self.sender().tabText(self.sender().currentIndex())
         if cur == "+":
