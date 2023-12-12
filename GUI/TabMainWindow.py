@@ -44,10 +44,13 @@ class Ui_MainWindow(object):
         self.menu_3.setObjectName("menu_3")
         self.menu_4 = QtWidgets.QMenu(self.menuBar)
         self.menu_4.setObjectName("menu_4")
+        self.menu_5 = QtWidgets.QMenu(self.menuBar)
+        self.menu_5.setObjectName("menu_5")
         MainWindow.setMenuBar(self.menuBar)
         self.menuBar.addAction(self.menu.menuAction())
         self.menuBar.addAction(self.menu_3.menuAction())
         self.menuBar.addAction(self.menu_4.menuAction())
+        self.menuBar.addAction(self.menu_5.menuAction())
         self.menuBar.addAction(self.menu_2.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -61,6 +64,7 @@ class Ui_MainWindow(object):
         self.menu_2.setTitle(_translate("MainWindow", "Языки"))
         self.menu_3.setTitle(_translate("MainWindow", "Суммаризация"))
         self.menu_4.setTitle(_translate("MainWindow", "Очистить/вернуть чаты"))
+        self.menu_5.setTitle(_translate("MainWindow", "Модели"))
 
 
 class Ui_InsideTabWindow(object):

@@ -2,8 +2,8 @@ import os
 import sys
 import sqlite3
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QTextCursor
+import g4f
+import langchain.chat_models.gigachat
 from summa import summarizer
 
 from PyQt5 import QtWidgets
@@ -13,11 +13,12 @@ from PyQt5.QtWidgets import QApplication, QAction, QActionGroup
 from utilities.TextFeatures import TextExtractor
 from utilities.GuiHelper import FileDialog, isChosen
 from GUI.TabMainWindow import Ui_MainWindow, Ui_InsideTabWindow
-from utilities.GptRequest import GptThreadSummarise, GptThreadChatting
+from utilities.GptRequest import GptThread
 
 # globals
 is_summarisation = False
 tabIndex = 0
+model = g4f.Provider.GeekGpt
 
 
 class main_window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -45,7 +46,6 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         self.chat_field_text = ""
         self.is_chosen_file = False
 
-
         # windows
         self.stacked = QtWidgets.QStackedWidget(self)
         self.tabbed_window = tabbed_window(self)
@@ -70,7 +70,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
 
     def start_script(self):
         if self.user_field.toPlainText():
-            global is_summarisation
+            global is_summarisation, model
             self.text = self.user_field.toPlainText()
             print(self.text, self.chat_field_text)
             if is_summarisation:
@@ -87,8 +87,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
                 self.gpt_thread.wait()
 
             # Создание и запуск нового потока
-            self.gpt_thread = GptThreadChatting(self.text) if not is_summarisation else GptThreadSummarise(
-                self.text, self.extension)
+            self.gpt_thread = GptThread(self.text, self.extension, model, is_summarisation)
             self.gpt_thread.gpt_result.connect(self.update_summary_text)
             self.gpt_thread.updateDB.connect(self.UpdateChat)
             self.gpt_thread.start()
@@ -103,14 +102,13 @@ class InsideTabWindow(QtWidgets.QMainWindow):
             self.chat_field_text += text
             # Обновляем текст виджета
             self.chat_field.setText(self.chat_field_text)
-            self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
         else:
             if text != "\nБот: ":
                 print(text.strip())
                 self.chat_field_text += f"\nАдмин: Ошибка при запросе к API: {text}\n\n"
                 self.chat_field.setText(self.chat_field_text)
-                self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
                 print(f"\nАдмин: Ошибка при запросе к API: {text}\n\n")
+        self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
 
     def UpdateChat(self):
         global tabIndex
@@ -207,6 +205,35 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.clearOrReturnChats.triggered.connect(self.funcClearOrReturn)
 
+        _providers = [
+            g4f.Provider.Aichat,
+            g4f.Provider.ChatBase,
+            g4f.Provider.Bing,
+            g4f.Provider.GptGo,
+            g4f.Provider.You,
+            g4f.Provider.Yqcloud,
+            g4f.Provider.GeekGpt,
+            g4f.Provider.Acytoo,
+            g4f.Provider.AiAsk,
+            g4f.Provider.AItianhu,
+            g4f.Provider.Bard,
+            g4f.Provider.ChatAnywhere,
+            g4f.Provider.ChatForAi,
+            g4f.Provider.Phind,
+            langchain.chat_models.gigachat.GigaChat
+        ]
+
+        self.theme_group_3 = QActionGroup(self)
+        self.theme_group_3.setExclusive(True)
+
+        for provider in _providers:
+            action = QAction(provider.__name__, self, checkable=True)
+            action.setActionGroup(self.theme_group_3)
+            self.main_window.menu_5.addAction(action)
+            self.theme_group_3.addAction(action)
+
+        self.main_window.menu_5.triggered.connect(self.changeProvider)
+
         # tabs
         print(self.load_from_database("tabWidgets"))
         for index, chat, summarized_val, chat_name in self.load_from_database("tabWidgets"):
@@ -214,6 +241,10 @@ class MainWindow(QtWidgets.QMainWindow):
             chat_widget = self.create_chat_widget(chat, summarized_val)
             self.main_window.tabWidget.addTab(chat_widget, chat_name)
         self.main_window.tabWidget.currentChanged.connect(self.tabCreate)
+
+    def changeProvider(self, action):
+        global model
+        model = action.text()
 
     def funcClearOrReturn(self, action):
         selected = action.text()
@@ -249,6 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Обновление виджета tabWidget
             # self.main_window.tabWidget.clear()
             self.remove_all_tabs()
+            self.all_chats_container.clear()
 
             # Загрузка данных из tabWidgets и добавление их в tabWidget
             for index, chat, summarized_val, chat_name in source_cursor.execute("SELECT * FROM tabWidgets"):
@@ -279,6 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Обновление виджета tabWidget
             # self.main_window.tabWidget.clear()
             self.remove_all_tabs()
+            self.all_chats_container.clear()
 
             # Загрузка данных из tabWidgets и добавление их в tabWidget
             for index, chat, summarized_val, chat_name in source_cursor.execute("SELECT * FROM tabWidgets"):
@@ -377,7 +410,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.sender().setCurrentIndex(self.sender().count() + 1)
             self.exchangeOld_to_database()
             self.save_to_database()
-            self.all_chats_container.append(chat_widget)
+            # self.all_chats_container.append(chat_widget)
             print(self.all_chats_container)
 
     def create_chat_widget(self, chat, sum_val):
@@ -407,7 +440,7 @@ def main():
     apply_stylesheet(app, theme='dark_medical.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('GptChat')
-    window.setMinimumSize(1162, 935)
+    window.setBaseSize(1162, 935)
     window.show()  # Показываем окно
     app.exec_()  # и запускаем приложение
 

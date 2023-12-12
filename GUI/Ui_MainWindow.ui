@@ -33,7 +33,7 @@
        <enum>QTabWidget::West</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -76,12 +76,18 @@
    </widget>
    <widget class="QMenu" name="menu_4">
     <property name="title">
-     <string>Очистить . вернуть чаты</string>
+     <string>Очистить/вернуть чаты</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu_5">
+    <property name="title">
+     <string>Модели</string>
     </property>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_3"/>
    <addaction name="menu_4"/>
+   <addaction name="menu_5"/>
    <addaction name="menu_2"/>
   </widget>
  </widget>
