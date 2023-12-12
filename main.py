@@ -4,6 +4,7 @@ import sqlite3
 
 import g4f
 import langchain.chat_models.gigachat
+from PyQt5.QtGui import QTextOption
 from summa import summarizer
 
 from PyQt5 import QtWidgets
@@ -44,6 +45,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         self.image_path = None
         self.gpt_thread = None
         self.chat_field_text = ""
+        self.user_field_text = ""
         self.is_chosen_file = False
 
         # windows
@@ -56,6 +58,8 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         # text_fields
         self.chat_field = self.tabbed_window.textEdit
         self.chat_field.setReadOnly(True)
+        # self.chat_field.setWordWrapMode(QTextOption.NoWrap)
+        self.chat_field.document().setMaximumBlockCount(50)
         self.user_field = self.tabbed_window.textEdit_2
 
         # buttons
@@ -77,7 +81,6 @@ class InsideTabWindow(QtWidgets.QMainWindow):
                 self.chat_field_text += f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
             else:
                 self.chat_field_text += f"Я: {self.text}\n"
-            self.user_field.clear()
             self.chat_field.setText(self.chat_field_text)
             print(self.user_field.toPlainText())
 
@@ -91,6 +94,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
             self.gpt_thread.gpt_result.connect(self.update_summary_text)
             self.gpt_thread.updateDB.connect(self.UpdateChat)
             self.gpt_thread.start()
+            self.user_field_text = self.user_field.toPlainText()
             self.user_field.clear()
             self.is_chosen_file = False
         else:
@@ -104,6 +108,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
             self.chat_field.setText(self.chat_field_text)
         else:
             if text != "\nБот: ":
+                self.user_field_text = self.user_field_text
                 print(text.strip())
                 self.chat_field_text += f"\nАдмин: Ошибка при запросе к API: {text}\n\n"
                 self.chat_field.setText(self.chat_field_text)
@@ -440,7 +445,7 @@ def main():
     apply_stylesheet(app, theme='dark_medical.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('GptChat')
-    window.setBaseSize(1162, 935)
+    window.setMinimumSize(1162, 935)
     window.show()  # Показываем окно
     app.exec_()  # и запускаем приложение
 
