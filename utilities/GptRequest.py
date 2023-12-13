@@ -61,15 +61,33 @@ class GptThread(QThread):
         response = chat(messages).content
 
     def OtherModelRun(self, text):
-        response = g4f.ChatCompletion.create(
-            model=g4f.models.default,
-            messages=[{"role": "user", "content": text}],
-            provider=g4f.Provider.GeekGpt,
-            stream=True,
-            timeout=3,
-        )
-        self.gpt_result.emit("\nБот: ", 0)
-        for message in response:
-            self.gpt_result.emit(message, 0)
-        self.gpt_result.emit("\n\n", 0)
-        self.updateDB.emit()
+        import time
+
+        max_retries = 10  # Максимальное количество попыток
+
+        for attempt in range(max_retries):
+            try:
+                response = g4f.ChatCompletion.create(
+                    model=g4f.models.default,
+                    messages=[{"role": "user", "content": text}],
+                    provider=g4f.Provider.GeekGpt,
+                    stream=True
+                )
+                # Продолжаем обработку response
+                self.gpt_result.emit("\nБот: ", 0)
+                for message in response:
+                    self.gpt_result.emit(message, 0)
+                self.gpt_result.emit("\n\n", 0)
+                self.updateDB.emit()
+                break  # Выход из цикла, если запрос выполнен успешно
+            except Exception as e:
+                print(f"Ошибка: {e}")
+                if attempt < max_retries - 1:
+                    print(f"Повторная попытка через 5 секунд...")
+                    self.gpt_result.emit(f"{attempt + 1}-я попытка: {e}\nПовторная попытка через 5 секунд...", 1)
+                    time.sleep(5)  # Подождать 30 секунд перед повторной попыткой
+                else:
+                    self.gpt_result.emit("\nПревышено максимальное количество попыток. Прекращаем.", 1)
+                    print("Превышено максимальное количество попыток. Прекращаем.")
+                    break
+

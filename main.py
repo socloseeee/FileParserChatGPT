@@ -59,7 +59,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         self.chat_field = self.tabbed_window.textEdit
         self.chat_field.setReadOnly(True)
         # self.chat_field.setWordWrapMode(QTextOption.NoWrap)
-        self.chat_field.document().setMaximumBlockCount(50)
+        self.chat_field.document().setMaximumBlockCount(100)
         self.user_field = self.tabbed_window.textEdit_2
 
         # buttons
@@ -108,11 +108,10 @@ class InsideTabWindow(QtWidgets.QMainWindow):
             self.chat_field.setText(self.chat_field_text)
         else:
             if text != "\nБот: ":
-                self.user_field_text = self.user_field_text
                 print(text.strip())
-                self.chat_field_text += f"\nАдмин: Ошибка при запросе к API: {text}\n\n"
+                self.chat_field_text += f"Ошибка при запросе к API: {text}\n\n"
                 self.chat_field.setText(self.chat_field_text)
-                print(f"\nАдмин: Ошибка при запросе к API: {text}\n\n")
+                print(f"Ошибка при запросе к API: {text}\n\n")
         self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
 
     def UpdateChat(self):
@@ -445,7 +444,7 @@ def main():
     apply_stylesheet(app, theme='dark_medical.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('GptChat')
-    window.setMinimumSize(1162, 935)
+    window.setBaseSize(1162, 935)
     window.show()  # Показываем окно
     app.exec_()  # и запускаем приложение
 
