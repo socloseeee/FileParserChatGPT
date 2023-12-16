@@ -6,10 +6,10 @@ from langchain.schema import HumanMessage, SystemMessage
 from langchain.chat_models.gigachat import GigaChat
 from langchain_core.callbacks import BaseCallbackHandler
 
-
 config = configparser.ConfigParser()
 config.read('credentials.ini')
 value1 = config.get('Section1', 'variable1')
+
 
 class StreamHandler(BaseCallbackHandler):
     def __init__(self, signal):
@@ -37,10 +37,11 @@ class GptThread(QThread):
                 text = self.text if not self.isSummarisation else \
                     f"Суммаризируй содержимое {self.extension}-файла на русском:\n" + self.text
                 text = text[:10000]
-                if self.model == "GigaChat":
+                print(self.model.__name__ )
+                if self.model.__name__ == "langchain.chat_models.gigachat":
                     self.GigachatRun(text)
                 else:
-                    self.OtherModelRun(text)
+                    self.OtherModelRun(text, self.model)
                 self.gpt_result.emit("\n\n", 0)
                 self.updateDB.emit()
         except Exception as e:
@@ -60,7 +61,7 @@ class GptThread(QThread):
         )
         response = chat(messages).content
 
-    def OtherModelRun(self, text):
+    def OtherModelRun(self, text, model):
         import time
 
         max_retries = 10  # Максимальное количество попыток
@@ -70,7 +71,7 @@ class GptThread(QThread):
                 response = g4f.ChatCompletion.create(
                     model=g4f.models.default,
                     messages=[{"role": "user", "content": text}],
-                    provider=g4f.Provider.GeekGpt,
+                    provider=model,
                     stream=True
                 )
                 # Продолжаем обработку response
@@ -90,4 +91,3 @@ class GptThread(QThread):
                     self.gpt_result.emit("\nПревышено максимальное количество попыток. Прекращаем.", 1)
                     print("Превышено максимальное количество попыток. Прекращаем.")
                     break
-

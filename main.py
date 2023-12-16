@@ -4,7 +4,6 @@ import sqlite3
 
 import g4f
 import langchain.chat_models.gigachat
-from PyQt5.QtGui import QTextOption
 from summa import summarizer
 
 from PyQt5 import QtWidgets
@@ -19,7 +18,7 @@ from utilities.GptRequest import GptThread
 # globals
 is_summarisation = False
 tabIndex = 0
-model = g4f.Provider.GeekGpt
+model = g4f.Provider.ChatBase
 
 
 class main_window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -248,7 +247,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def changeProvider(self, action):
         global model
-        model = action.text()
+        if action.text() != "GigaChat":
+            model = eval("g4f.Provider." + action.text())
+        else:
+            model = langchain.chat_models.gigachat
+            print(model.__name__)
 
     def funcClearOrReturn(self, action):
         selected = action.text()
