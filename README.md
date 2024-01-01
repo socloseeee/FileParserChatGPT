@@ -1,5 +1,7 @@
 # ChatGPT GUI + Files2TextSummarization
 
+![Пример GIF](static/new_example.gif)
+
 ![Пример GIF](static/work_app.gif)
 
 ## Navigation:
