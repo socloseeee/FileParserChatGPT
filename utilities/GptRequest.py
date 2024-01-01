@@ -1,8 +1,10 @@
 """gpt"""
+import sqlite3
+
 import g4f
 import configparser
 from PyQt5.QtCore import pyqtSignal, QThread
-from langchain.schema import HumanMessage, SystemMessage
+from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain.chat_models.gigachat import GigaChat
 from langchain_core.callbacks import BaseCallbackHandler
 
@@ -24,53 +26,101 @@ class GptThread(QThread):
     gpt_result = pyqtSignal(str, int)
     updateDB = pyqtSignal()
 
-    def __init__(self, text, extension, model, isSummarisation):
+    def __init__(self, text, extension, model, chat_name, isSummarisation):
         super().__init__()
         self.model = model
         self.text = text
         self.extension = extension
+        self.chat_name = chat_name
         self.isSummarisation = isSummarisation
 
     def run(self):
         try:
             if self.text:
-                text = self.text if not self.isSummarisation else \
-                    f"Суммаризируй содержимое {self.extension}-файла на русском:\n" + self.text
-                text = text[:10000]
-                print(self.model.__name__ )
+                text = self.text
+                print(self.model.__name__)
                 if self.model.__name__ == "langchain.chat_models.gigachat":
-                    self.GigachatRun(text)
+                    self.GigachatRun(text, self.isSummarisation, self.chat_name, self.extension)
                 else:
-                    self.OtherModelRun(text, self.model)
-                self.gpt_result.emit("\n\n", 0)
+                    self.OtherModelRun(text, self.model, self.isSummarisation, self.chat_name, self.extension)
+                # self.gpt_result.emit("\n\n", 0)
                 self.updateDB.emit()
         except Exception as e:
             self.gpt_result.emit(str(e), 1)
 
-    def GigachatRun(self, text):
-        messages = [
-            HumanMessage(content=text)
-        ]
-        self.gpt_result.emit(f"\nБот: ", 0)
+    def GigachatRun(self, text, summarisation, chat_name, ext):
         chat = GigaChat(
             credentials=value1,
             scope="GIGACHAT_API_CORP",
+            model="GigaChat-Pro",
             verify_ssl_certs=False,
             streaming=True,
-            callbacks=[StreamHandler(self.gpt_result)]
+            callbacks=[StreamHandler(self.gpt_result)],
         )
-        response = chat(messages).content
 
-    def OtherModelRun(self, text, model):
+        connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+        cursor = connection.cursor()
+
+        # Insert serialized data into the table
+        cursor.execute(
+            '''
+            SELECT * FROM tabWidgets WHERE ChatName = ? LIMIT 10
+            ''', (chat_name,)
+        )
+
+        messages = []
+        for user_message, bot_message in list(map(lambda x: x.split('Бот: '), cursor.fetchall()[0][1].split('Я: ')))[
+                                         1:]:
+            messages.append(HumanMessage(content=user_message))
+            messages.append(AIMessage(content=bot_message))
+        messages.append(
+            SystemMessage(content=f"Давай я буду кидать тебе содержимое текстовых файлов (csv, txt, rtf, docx, "
+                                  f"xlsx и так далее), а ты будешь анализировать данное содержимое и кратко "
+                                  f"суммаризировать.\n"),
+        )
+
+        messages = [
+                    HumanMessage(content=f"Просуммаризируй содержимое {ext}-файла на русском:\n" * summarisation + text)
+        ]
+        # print(messages)
+        self.gpt_result.emit(f"\nБот: ", 0)
+        for message in chat(messages).content:
+            pass
+        self.updateDB.emit()
+        self.gpt_result.emit("\n\n", 0)
+
+    def OtherModelRun(self, text, model, summarisation, chat_name, ext):
         import time
 
         max_retries = 10  # Максимальное количество попыток
 
         for attempt in range(max_retries):
             try:
+                connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+                cursor = connection.cursor()
+
+                # Insert serialized data into the table
+                cursor.execute(
+                    '''
+                    SELECT * FROM tabWidgets WHERE ChatName = ? LIMIT 10
+                    ''', (chat_name, )
+                )
+                # print(chat_name)
+
+                messages = []
+                for user_message, bot_message in list(map(lambda x: x.split('Бот: '), cursor.fetchall()[0][1].split('Я: ')))[1:]:
+                    messages.append({"role": "user", "content": user_message})
+                    messages.append({"role": "assistant", "content": bot_message})
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": f"Просуммаризируй содержимое {ext}-файла:\n" * summarisation + text
+                    }
+                )
+                # print(messages)
                 response = g4f.ChatCompletion.create(
-                    model=g4f.models.default,
-                    messages=[{"role": "user", "content": text}],
+                    model="gpt-3.5-turbo",  # gpt-3.5-turbo
+                    messages=messages,
                     provider=model,
                     stream=True
                 )
@@ -82,12 +132,12 @@ class GptThread(QThread):
                 self.updateDB.emit()
                 break  # Выход из цикла, если запрос выполнен успешно
             except Exception as e:
-                print(f"Ошибка: {e}")
+                # print(f"Ошибка: {e}")
                 if attempt < max_retries - 1:
                     print(f"Повторная попытка через 5 секунд...")
                     self.gpt_result.emit(f"{attempt + 1}-я попытка: {e}\nПовторная попытка через 5 секунд...", 1)
                     time.sleep(5)  # Подождать 30 секунд перед повторной попыткой
                 else:
                     self.gpt_result.emit("\nПревышено максимальное количество попыток. Прекращаем.", 1)
-                    print("Превышено максимальное количество попыток. Прекращаем.")
+                    # print("Превышено максимальное количество попыток. Прекращаем.")
                     break

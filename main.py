@@ -4,21 +4,23 @@ import sqlite3
 
 import g4f
 import langchain.chat_models.gigachat
+
+langchain.chat_models.GigaChat()
 from summa import summarizer
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from qt_material import apply_stylesheet, list_themes
 from PyQt5.QtWidgets import QApplication, QAction, QActionGroup
 
 from utilities.TextFeatures import TextExtractor
-from utilities.GuiHelper import FileDialog, isChosen
+from utilities.GuiHelper import FileDialog, isChosen, appendText
 from GUI.TabMainWindow import Ui_MainWindow, Ui_InsideTabWindow
 from utilities.GptRequest import GptThread
 
 # globals
 is_summarisation = False
 tabIndex = 0
-model = g4f.Provider.ChatBase
+model = g4f.Provider.GeekGpt
 
 
 class main_window(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -34,8 +36,10 @@ class tabbed_window(QtWidgets.QMainWindow, Ui_InsideTabWindow):
 
 
 class InsideTabWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, tab_name):
         super().__init__()
+
+        self.tab_name = tab_name
 
         # vars
         self.text = ""
@@ -56,9 +60,10 @@ class InsideTabWindow(QtWidgets.QMainWindow):
 
         # text_fields
         self.chat_field = self.tabbed_window.textEdit
+        self.tabbed_window.textEdit.ensureCursorVisible()
         self.chat_field.setReadOnly(True)
         # self.chat_field.setWordWrapMode(QTextOption.NoWrap)
-        self.chat_field.document().setMaximumBlockCount(100)
+        # self.chat_field.document().setMaximumBlockCount(100)
         self.user_field = self.tabbed_window.textEdit_2
 
         # buttons
@@ -75,13 +80,15 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         if self.user_field.toPlainText():
             global is_summarisation, model
             self.text = self.user_field.toPlainText()
-            print(self.text, self.chat_field_text)
+            # print(self.text, self.chat_field_text)
             if is_summarisation:
                 self.chat_field_text += f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
+                appendText(self.chat_field, f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n")
             else:
                 self.chat_field_text += f"Я: {self.text}\n"
-            self.chat_field.setText(self.chat_field_text)
-            print(self.user_field.toPlainText())
+                appendText(self.chat_field, f"Я: {self.text}\n")
+            self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
+            # print(self.user_field.toPlainText())
 
             # Остановить предыдущий поток, если он существует
             if self.gpt_thread and self.gpt_thread.isRunning():
@@ -89,7 +96,7 @@ class InsideTabWindow(QtWidgets.QMainWindow):
                 self.gpt_thread.wait()
 
             # Создание и запуск нового потока
-            self.gpt_thread = GptThread(self.text, self.extension, model, is_summarisation)
+            self.gpt_thread = GptThread(self.text, self.extension, model, self.tab_name, is_summarisation)
             self.gpt_thread.gpt_result.connect(self.update_summary_text)
             self.gpt_thread.updateDB.connect(self.UpdateChat)
             self.gpt_thread.start()
@@ -103,19 +110,18 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         if error == 0:
             # Добавляем текст с новой строки и префиксом, например, "Бот:"
             self.chat_field_text += text
-            # Обновляем текст виджета
-            self.chat_field.setText(self.chat_field_text)
+            appendText(self.chat_field, text)
         else:
             if text != "\nБот: ":
-                print(text.strip())
-                self.chat_field_text += f"Ошибка при запросе к API: {text}\n\n"
-                self.chat_field.setText(self.chat_field_text)
-                print(f"Ошибка при запросе к API: {text}\n\n")
+                # print(text.strip())
+                self.chat_field_text += f"\nОшибка при запросе к API: {text}\n\n"
+                appendText(self.chat_field, f"\nОшибка при запросе к API: {text}\n\n")
+                # print(f"\nОшибка при запросе к API: {text}\n\n")
         self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
 
     def UpdateChat(self):
         global tabIndex
-        print(self.chat_field_text)
+        # print(self.chat_field_text)
         serialized_data = {
             'Chat': self.chat_field.toPlainText(),
             'summarisedVal': summarizer.summarize(self.chat_field.toPlainText(), ratio=0.05)
@@ -209,19 +215,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clearOrReturnChats.triggered.connect(self.funcClearOrReturn)
 
         _providers = [
-            g4f.Provider.Aichat,
+            # g4f.Provider.Aichat, inactiave
             g4f.Provider.ChatBase,
-            g4f.Provider.Bing,
-            g4f.Provider.GptGo,
-            g4f.Provider.You,
-            g4f.Provider.Yqcloud,
-            g4f.Provider.GeekGpt,
-            g4f.Provider.Acytoo,
-            g4f.Provider.AiAsk,
-            g4f.Provider.AItianhu,
-            g4f.Provider.Bard,
-            g4f.Provider.ChatAnywhere,
-            g4f.Provider.ChatForAi,
+            # g4f.Provider.Bing,  # proxy
+            # g4f.Provider.GptGo,  # proxy
+            # g4f.Provider.You,  # proxy
+            # g4f.Provider.Yqcloud,
+            g4f.Provider.GeekGpt,  # too many requests
+            # g4f.Provider.Acytoo,
+            # g4f.Provider.AiAsk,
+            # g4f.Provider.AItianhu,
+            # g4f.Provider.Bard,
+            # g4f.Provider.ChatAnywhere,
+            # g4f.Provider.ChatForAi,
             g4f.Provider.Phind,
             langchain.chat_models.gigachat.GigaChat
         ]
@@ -238,10 +244,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_window.menu_5.triggered.connect(self.changeProvider)
 
         # tabs
-        print(self.load_from_database("tabWidgets"))
+        # print(self.load_from_database("tabWidgets"))
         for index, chat, summarized_val, chat_name in self.load_from_database("tabWidgets"):
             self.removing_tabs = False
-            chat_widget = self.create_chat_widget(chat, summarized_val)
+            chat_widget = self.create_chat_widget(chat, chat_name, summarized_val)
             self.main_window.tabWidget.addTab(chat_widget, chat_name)
         self.main_window.tabWidget.currentChanged.connect(self.tabCreate)
 
@@ -251,7 +257,7 @@ class MainWindow(QtWidgets.QMainWindow):
             model = eval("g4f.Provider." + action.text())
         else:
             model = langchain.chat_models.gigachat
-            print(model.__name__)
+            # print(model.__name__)
 
     def funcClearOrReturn(self, action):
         selected = action.text()
@@ -292,12 +298,11 @@ class MainWindow(QtWidgets.QMainWindow):
             # Загрузка данных из tabWidgets и добавление их в tabWidget
             for index, chat, summarized_val, chat_name in source_cursor.execute("SELECT * FROM tabWidgets"):
                 self.removing_tabs = False
-                chat_widget = self.create_chat_widget(chat, summarized_val)
+                chat_widget = self.create_chat_widget(chat, chat_name, summarized_val)
                 self.main_window.tabWidget.addTab(chat_widget, chat_name)
 
             source_connection.close()
             # action.setChecked(False)
-
 
         elif selected == "Вернуть чаты" and not self.Return:
             self.Return = True
@@ -323,7 +328,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Загрузка данных из tabWidgets и добавление их в tabWidget
             for index, chat, summarized_val, chat_name in source_cursor.execute("SELECT * FROM tabWidgets"):
                 self.removing_tabs = False
-                chat_widget = self.create_chat_widget(chat, summarized_val)
+                chat_widget = self.create_chat_widget(chat, chat_name, summarized_val)
                 self.main_window.tabWidget.addTab(chat_widget, chat_name)
 
             source_connection.close()
@@ -341,7 +346,7 @@ class MainWindow(QtWidgets.QMainWindow):
         del self.removing_tabs
 
     def save_to_database(self):
-        print(self.main_window.tabWidget.currentWidget().objectName())
+        # print(self.main_window.tabWidget.currentWidget().objectName())
         serialized_data = {
             'Chat': "",  # obj.chat_field_text
             'summarisedVal': "",  # summarizer.summarize(obj.chat_field_text, ratio=0.1)
@@ -385,7 +390,7 @@ class MainWindow(QtWidgets.QMainWindow):
             is_summarisation = False
 
     def exchangeOld_to_database(self):
-        print(self.main_window.tabWidget.currentWidget().objectName())
+        # print(self.main_window.tabWidget.currentWidget().objectName())
         serialized_data = {
             'Chat': "",  # obj.chat_field_text
             'summarisedVal': "",  # summarizer.summarize(obj.chat_field_text, ratio=0.1)
@@ -412,16 +417,17 @@ class MainWindow(QtWidgets.QMainWindow):
         cur = self.sender().tabText(self.sender().currentIndex())
         if cur == "+":
             self.sender().setTabText(self.sender().currentIndex(), f'Чат {self.main_window.tabWidget.count()}')
-            chat_widget = self.create_chat_widget("", "")
+            self.all_chats_container[-1].tab_name = f'Чат {self.main_window.tabWidget.count()}'
+            chat_widget = self.create_chat_widget("", "+", "")
             self.sender().addTab(chat_widget, "+")
             self.sender().setCurrentIndex(self.sender().count() + 1)
             self.exchangeOld_to_database()
             self.save_to_database()
             # self.all_chats_container.append(chat_widget)
-            print(self.all_chats_container)
+            # print(self.all_chats_container)
 
-    def create_chat_widget(self, chat, sum_val):
-        new_chat = InsideTabWindow()
+    def create_chat_widget(self, chat, chat_name, sum_val):
+        new_chat = InsideTabWindow(chat_name)
         new_chat.chat_field_text = chat
         new_chat.chat_field.setText(chat)
         new_chat.sumChat = sum_val
@@ -447,7 +453,7 @@ def main():
     apply_stylesheet(app, theme='dark_medical.xml')
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.setWindowTitle('GptChat')
-    window.setBaseSize(1162, 935)
+    window.setMinimumSize(1162, 935)
     window.show()  # Показываем окно
     app.exec_()  # и запускаем приложение
 

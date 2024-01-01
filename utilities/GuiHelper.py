@@ -1,6 +1,6 @@
 import os
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QEvent, QObject, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox
 
@@ -111,6 +111,13 @@ class LabelStretcher(QObject):
         print("post:", i, label.minimumSizeHint(), label.sizeHint(), label.size())
 
         return False
+
+
+def appendText(field, text):
+    cursor = field.textCursor()
+    cursor.movePosition(QtGui.QTextCursor.End)
+    cursor.insertText(text)
+    field.setTextCursor(cursor)
 
 
 def isChosen():

@@ -64,7 +64,7 @@ class Ui_MainWindow(object):
         self.menu_2.setTitle(_translate("MainWindow", "Языки"))
         self.menu_3.setTitle(_translate("MainWindow", "Суммаризация"))
         self.menu_4.setTitle(_translate("MainWindow", "Очистить/вернуть чаты"))
-        self.menu_5.setTitle(_translate("MainWindow", "Модели"))
+        self.menu_5.setTitle(_translate("MainWindow", "Провайдеры"))
 
 
 class Ui_InsideTabWindow(object):
@@ -105,7 +105,7 @@ class Ui_InsideTabWindow(object):
         self.verticalLayout_3.addLayout(self.verticalLayout)
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.textEdit = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEdit = QtWidgets.QTextBrowser(self.centralwidget)
         # self.textEdit.verticalScrollBar().setValue(self.textEdit.verticalScrollBar().maximum())
 
         font = QtGui.QFont()

@@ -69,4 +69,4 @@ class Ui_MainWindow(object):
         self.menu_2.setTitle(_translate("MainWindow", "Языки"))
         self.menu_3.setTitle(_translate("MainWindow", "Суммаризация"))
         self.menu_4.setTitle(_translate("MainWindow", "Очистить/вернуть чаты"))
-        self.menu_5.setTitle(_translate("MainWindow", "Модели"))
+        self.menu_5.setTitle(_translate("MainWindow", "Провайдеры"))
