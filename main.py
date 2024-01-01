@@ -441,8 +441,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def create_chat_widget(self, chat, chat_name, sum_val):
         new_chat = InsideTabWindow(chat_name)
-        new_chat.chat_field_text = chat
-        new_chat.chat_field.setText(chat)
+        for user_message, bot_message in list(map(lambda x: x.split('Бот: '), chat.split('Я: ')))[1:]:
+            appendHtml(new_chat.chat_field, """
+                <img src="static/user3.jpg" alt="Image" height="40" width="40">
+                """)
+            appendText(new_chat.chat_field, "\nЯ: " + user_message[:-1])
+            appendHtml(new_chat.chat_field, """
+                <img src="static/gpt5.jpg" alt="Image" height="40" width="40">
+                """)
+            appendText(new_chat.chat_field, "\nБот: " + bot_message)
+            new_chat.chat_field_text += user_message + bot_message
+        #new_chat.chat_field_text = chat
+        #new_chat.chat_field.setText(chat)
         new_chat.sumChat = sum_val
         self.all_chats_container.append(new_chat)
         return new_chat
