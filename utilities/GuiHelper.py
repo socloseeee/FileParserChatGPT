@@ -120,6 +120,12 @@ def appendText(field, text):
     field.setTextCursor(cursor)
 
 
+def appendHtml(field, html):
+    cursor = field.textCursor()
+    cursor.movePosition(QtGui.QTextCursor.End)
+    cursor.insertHtml(html)
+    field.setTextCursor(cursor)
+
 def isChosen():
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Warning)

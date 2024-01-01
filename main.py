@@ -13,7 +13,7 @@ from qt_material import apply_stylesheet, list_themes
 from PyQt5.QtWidgets import QApplication, QAction, QActionGroup
 
 from utilities.TextFeatures import TextExtractor
-from utilities.GuiHelper import FileDialog, isChosen, appendText
+from utilities.GuiHelper import FileDialog, isChosen, appendText, appendHtml
 from GUI.TabMainWindow import Ui_MainWindow, Ui_InsideTabWindow
 from utilities.GptRequest import GptThread
 
@@ -80,13 +80,21 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         if self.user_field.toPlainText():
             global is_summarisation, model
             self.text = self.user_field.toPlainText()
+            html = """
+            <img src="static/user3.jpg" alt="Image" height="40" width="40">
+            """
             # print(self.text, self.chat_field_text)
             if is_summarisation:
-                self.chat_field_text += f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
-                appendText(self.chat_field, f"Я: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n")
+                appendHtml(self.chat_field, html)
+                text = f"\nЯ: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
+                self.chat_field_text += text
+                appendText(self.chat_field, text)
             else:
-                self.chat_field_text += f"Я: {self.text}\n"
-                appendText(self.chat_field, f"Я: {self.text}\n")
+                # self.chat_field.insertHtml(html)
+                appendHtml(self.chat_field, html)
+                text = f"\nЯ: {self.text}\n"
+                self.chat_field_text += text
+                appendText(self.chat_field, text)
             self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
             # print(self.user_field.toPlainText())
 
@@ -108,6 +116,11 @@ class InsideTabWindow(QtWidgets.QMainWindow):
 
     def update_summary_text(self, text, error):
         if error == 0:
+            if text == "\nБот: ":
+                html = """
+                <img src="static/gpt5.jpg" alt="Image" height="40" width="40">
+                """
+                appendHtml(self.chat_field, html)
             # Добавляем текст с новой строки и префиксом, например, "Бот:"
             self.chat_field_text += text
             appendText(self.chat_field, text)
@@ -228,7 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # g4f.Provider.Bard,
             # g4f.Provider.ChatAnywhere,
             # g4f.Provider.ChatForAi,
-            g4f.Provider.Phind,
+            # g4f.Provider.Phind,
             langchain.chat_models.gigachat.GigaChat
         ]
 
