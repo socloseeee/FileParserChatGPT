@@ -1,5 +1,7 @@
 """gpt"""
+import time
 import sqlite3
+from abc import ABCMeta
 
 import g4f
 import configparser
@@ -24,14 +26,17 @@ class StreamHandler(BaseCallbackHandler):
 
 class GptThread(QThread):
     gpt_result = pyqtSignal(str, int)
-    updateDB = pyqtSignal()
+    updateDB = pyqtSignal(str, str, int, ABCMeta, dict)
 
-    def __init__(self, text, extension, model, chat_name, isSummarisation):
+    def __init__(self, text, extension, model, chat_name, isSummarisation, tabIndex, provider, model_dict):
         super().__init__()
         self.model = model
         self.text = text
         self.extension = extension
         self.chat_name = chat_name
+        self.tabIndex = tabIndex
+        self.provider = provider
+        self.model_dict = model_dict
         self.isSummarisation = isSummarisation
 
     def run(self):
@@ -39,16 +44,34 @@ class GptThread(QThread):
             if self.text:
                 text = self.text
                 print(self.model.__name__)
-                if self.model.__name__ == "langchain.chat_models.gigachat":
-                    self.GigachatRun(text, self.isSummarisation, self.chat_name, self.extension)
+
+                connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
+                cursor = connection.cursor()
+
+                # Insert serialized data into the table
+                cursor.execute(
+                    '''
+                    SELECT * 
+                    FROM 
+                        Chat as c
+                        INNER JOIN
+                        Messages as m
+                        ON c.chat_id = m.chat_id
+                    WHERE c.chat_name = ? 
+                    LIMIT 10
+                    ''', (self.chat_name,)
+                )
+                print(self.model.__name__)
+                if self.model.__name__ == "GigaChat":
+                    self.GigachatRun(text, self.isSummarisation, cursor, self.extension, self.tabIndex, self.provider, self.model_dict)
                 else:
-                    self.OtherModelRun(text, self.model, self.isSummarisation, self.chat_name, self.extension)
+                    self.OtherModelRun(text, self.model, self.isSummarisation, cursor, self.extension, self.tabIndex, self.provider, self.model_dict)
                 # self.gpt_result.emit("\n\n", 0)
-                self.updateDB.emit()
+                # self.updateDB.emit()
         except Exception as e:
             self.gpt_result.emit(str(e), 1)
 
-    def GigachatRun(self, text, summarisation, chat_name, ext):
+    def GigachatRun(self, text, summarisation, cursor, ext, tabIndex, provider, model_dict):
         chat = GigaChat(
             credentials=value1,
             scope="GIGACHAT_API_CORP",
@@ -58,57 +81,40 @@ class GptThread(QThread):
             callbacks=[StreamHandler(self.gpt_result)],
         )
 
-        connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
-        cursor = connection.cursor()
-
-        # Insert serialized data into the table
-        cursor.execute(
-            '''
-            SELECT * FROM tabWidgets WHERE ChatName = ? LIMIT 10
-            ''', (chat_name,)
-        )
-
         messages = []
-        for user_message, bot_message in list(map(lambda x: x.split('Бот: '), cursor.fetchall()[0][1].split('Я: ')))[
-                                         1:]:
+        for user_message, bot_message in zip(cursor.fetchall()[::2], cursor.fetchall()[1::2]):
             messages.append(HumanMessage(content=user_message))
             messages.append(AIMessage(content=bot_message))
         messages.append(
-            SystemMessage(content=f"Давай я буду кидать тебе содержимое текстовых файлов (csv, txt, rtf, docx, "
-                                  f"xlsx и так далее), а ты будешь анализировать данное содержимое и кратко "
-                                  f"суммаризировать.\n"),
+            SystemMessage(
+                content=f"Давай я буду кидать тебе содержимое текстовых файлов (csv, txt, rtf, docx, "
+                        f"xlsx и так далее), а ты будешь анализировать данное содержимое и кратко "
+                        f"суммаризировать.\n"
+            ),
         )
 
         messages = [
-                    HumanMessage(content=f"Просуммаризируй содержимое {ext}-файла на русском:\n" * summarisation + text)
+            HumanMessage(content=f"Просуммаризируй содержимое {ext}-файла на русском:\n" * summarisation + text)
         ]
         # print(messages)
         self.gpt_result.emit(f"\nБот: ", 0)
+        content = ''
         for message in chat(messages).content:
-            pass
-        self.updateDB.emit()
+            content += message
+        self.updateDB.emit(f"Просуммаризируй содержимое {ext}-файла на русском:\n" * summarisation + text, "User", tabIndex, provider, model_dict)
+        self.updateDB.emit(content, "Assistant", tabIndex, provider, model_dict)
         self.gpt_result.emit("\n\n", 0)
 
-    def OtherModelRun(self, text, model, summarisation, chat_name, ext):
-        import time
+    def OtherModelRun(self, text, model, summarisation, cursor, ext, tabIndex, provider, model_dict):
 
         max_retries = 10  # Максимальное количество попыток
 
         for attempt in range(max_retries):
             try:
-                connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
-                cursor = connection.cursor()
-
-                # Insert serialized data into the table
-                cursor.execute(
-                    '''
-                    SELECT * FROM tabWidgets WHERE ChatName = ? LIMIT 10
-                    ''', (chat_name, )
-                )
-                # print(chat_name)
 
                 messages = []
-                for user_message, bot_message in list(map(lambda x: x.split('Бот: '), cursor.fetchall()[0][1].split('Я: ')))[1:]:
+                print(cursor.fetchall())
+                for user_message, bot_message in zip(cursor.fetchall()[::2], cursor.fetchall()[1::2]):
                     messages.append({"role": "user", "content": user_message})
                     messages.append({"role": "assistant", "content": bot_message})
                 messages.append(
@@ -126,11 +132,15 @@ class GptThread(QThread):
                 )
                 # Продолжаем обработку response
                 self.gpt_result.emit("\nБот: ", 0)
+                content = ''
                 for message in response:
+                    content += message
                     self.gpt_result.emit(message, 0)
                 self.gpt_result.emit("\n\n", 0)
-                self.updateDB.emit()
-                break  # Выход из цикла, если запрос выполнен успешно
+                self.updateDB.emit(f"Просуммаризируй содержимое {ext}-файла на русском:\n" * summarisation + text,
+                                   "User", tabIndex, provider, model_dict)
+                self.updateDB.emit(content, "Assistant", tabIndex, provider, model_dict)
+                break
             except Exception as e:
                 # print(f"Ошибка: {e}")
                 if attempt < max_retries - 1:

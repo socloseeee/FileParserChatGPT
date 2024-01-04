@@ -126,6 +126,7 @@ def appendHtml(field, html):
     cursor.insertHtml(html)
     field.setTextCursor(cursor)
 
+
 def isChosen():
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Warning)
