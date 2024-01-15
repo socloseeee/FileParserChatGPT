@@ -20,7 +20,7 @@ class StreamHandler(BaseCallbackHandler):
         self.signal = signal
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
-        print(f"{token}", end="", flush=True)
+        # print(f"{token}", end="", flush=True)
         self.signal.emit(token, 0)
 
 
@@ -43,7 +43,7 @@ class GptThread(QThread):
         try:
             if self.text:
                 text = self.text
-                print(self.model.__name__)
+                # print(self.model.__name__)
 
                 connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
                 cursor = connection.cursor()
@@ -61,7 +61,7 @@ class GptThread(QThread):
                     LIMIT 10
                     ''', (self.chat_name,)
                 )
-                print(self.model.__name__)
+                # print(self.model.__name__)
                 if self.model.__name__ == "GigaChat":
                     self.GigachatRun(text, self.isSummarisation, cursor, self.extension, self.tabIndex, self.provider, self.model_dict)
                 else:
@@ -97,7 +97,7 @@ class GptThread(QThread):
             HumanMessage(content=f"Просуммаризируй содержимое {ext}-файла на русском:\n" * summarisation + text)
         ]
         # print(messages)
-        self.gpt_result.emit(f"\nБот: ", 0)
+        self.gpt_result.emit("bot pic calling", 2)
         content = ''
         for message in chat(messages).content:
             content += message
@@ -113,7 +113,7 @@ class GptThread(QThread):
             try:
 
                 messages = []
-                print(cursor.fetchall())
+                # print(cursor.fetchall())
                 for user_message, bot_message in zip(cursor.fetchall()[::2], cursor.fetchall()[1::2]):
                     messages.append({"role": "user", "content": user_message})
                     messages.append({"role": "assistant", "content": bot_message})
@@ -131,7 +131,8 @@ class GptThread(QThread):
                     stream=True
                 )
                 # Продолжаем обработку response
-                self.gpt_result.emit("\nБот: ", 0)
+                self.gpt_result.emit("bot pic calling", 2)
+
                 content = ''
                 for message in response:
                     content += message
@@ -144,7 +145,7 @@ class GptThread(QThread):
             except Exception as e:
                 # print(f"Ошибка: {e}")
                 if attempt < max_retries - 1:
-                    print(f"Повторная попытка через 5 секунд...")
+                    # print(f"Повторная попытка через 5 секунд...")
                     self.gpt_result.emit(f"{attempt + 1}-я попытка: {e}\nПовторная попытка через 5 секунд...", 1)
                     time.sleep(5)  # Подождать 30 секунд перед повторной попыткой
                 else:

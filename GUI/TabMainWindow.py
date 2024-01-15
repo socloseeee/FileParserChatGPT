@@ -112,6 +112,7 @@ class Ui_InsideTabWindow(object):
         font.setPointSize(9)
         self.textEdit.setFont(font)
         self.textEdit.setObjectName("textEdit")
+
         self.verticalLayout_2.addWidget(self.textEdit)
         self.verticalLayout_3.addLayout(self.verticalLayout_2)
         self.verticalLayout_4 = QtWidgets.QVBoxLayout()

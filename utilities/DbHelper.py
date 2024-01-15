@@ -186,6 +186,9 @@ def saveSettings2DB(provider, tabIndex, theme, is_summarisation, language):
     connection = sqlite3.connect('database/db.sqlite3')  # Replace with your database name
     cursor = connection.cursor()
 
+    provider = f"{provider}"[f"{provider}".index("'") + 1:f"{provider}".rindex(".")] if f"{provider}".find("'") != -1 else f"{provider}"
+    provider = provider if "'" not in provider else provider[:provider.index("'")]
+
     cursor.execute('''
             UPDATE Settings 
             SET provider = ?,
@@ -194,7 +197,7 @@ def saveSettings2DB(provider, tabIndex, theme, is_summarisation, language):
                 summarization = ?,
                 language = ?
             ''', (
-        f"{provider}"[f"{provider}".index("'") + 1:f"{provider}".rindex(".")],
+        provider,
         tabIndex,
         theme,
         is_summarisation,

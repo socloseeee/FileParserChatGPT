@@ -2,6 +2,9 @@ import os
 import sys
 import sqlite3
 
+import commonmark
+import langchain_community
+
 import g4f
 import langchain.chat_models.gigachat
 
@@ -10,10 +13,11 @@ from langchain.chat_models.gigachat import GigaChat
 from qt_material import apply_stylesheet, list_themes
 from PyQt5.QtWidgets import QApplication, QAction, QActionGroup
 
+from GUI.github_markdown_style import GITHUB_MARKDOWN_STYLE
 from utilities.DbHelper import appendMessage, clearAllChats, returnAllChats, load_from_database, \
     exchangeOld_to_database, save_to_database, loadSettings, saveSettings2DB
 from utilities.TextFeatures import TextExtractor
-from utilities.GuiHelper import FileDialog, isChosen, appendText, appendHtml
+from utilities.GuiHelper import FileDialog, isChosen, appendText, appendHtml, textUprising
 from GUI.TabMainWindow import Ui_MainWindow, Ui_InsideTabWindow
 from utilities.GptRequest import GptThread
 
@@ -25,6 +29,12 @@ model_dict = {
     "GeekGpt": "Gpt-3.5",
     "ChatBase": "Gpt-3.5",
     "GigaChat": "ruGPT-3"
+}
+
+extra = {
+    # 'font_family': 'monoespace',
+    # 'font_size': '9px',
+    # 'density_scale': '-10'
 }
 
 
@@ -85,19 +95,19 @@ class InsideTabWindow(QtWidgets.QMainWindow):
         if self.user_field.toPlainText():
             global is_summarisation, tabIndex, provider, model_dict
             self.text = self.user_field.toPlainText()
-            html = """
-            <img src="static/user3.jpg" alt="Image" height="40" width="40">
-            """
-            # (self.text, self.chat_field_text)
+            html = """<img src="static/user3.jpg" alt="Image" height="40" width="40"><span style="font-family: 
+            'Arial', sans-serif; font-weight: bold; position: relative; top: -5px;">  You</span><span style="font-family: 
+            'Arial', sans-serif; font-weight: normal; position: relative; top: -5px;"> </span>"""
             if is_summarisation:
                 appendHtml(self.chat_field, html)
-                text = f"\nЯ: Суммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n"
+
+                text = f"\nСуммаризируй содержимое {self.extension}-файла на русском:\n{self.text}\n\n"
                 self.chat_field_text += text
                 appendText(self.chat_field, text)
             else:
                 # self.chat_field.insertHtml(html)
                 appendHtml(self.chat_field, html)
-                text = f"\nЯ: {self.text}\n"
+                text = f"\n{self.text}\n\n"
                 self.chat_field_text += text
                 appendText(self.chat_field, text)
             self.chat_field.verticalScrollBar().setValue(self.chat_field.verticalScrollBar().maximum())
@@ -121,18 +131,20 @@ class InsideTabWindow(QtWidgets.QMainWindow):
 
     def update_summary_text(self, text, error):
         if error == 0:
-            if text == "\nБот: ":
-                html = """
-                <img src="static/gpt5.jpg" alt="Image" height="40" width="40">
-                """
-                appendHtml(self.chat_field, html)
-            # Добавляем текст с новой строки и префиксом, например, "Бот:"
-            if '```' in text:
-                text = text[:text.index("```")] + """<pre><code class="python">"""
+            # Добавляем текст с новой строки и префиксом, например, "BotGPT:"
             self.chat_field_text += text
             appendText(self.chat_field, text)
+        elif error == 2:
+            appendHtml(self.chat_field, """
+                        <div>
+                            <img src="static/gpt5.jpg" alt="Image" height="40" width="40" style="display: inline-block;">
+                            <span style="font-family: 'Arial', sans-serif; font-weight: bold; position: relative; top: -5px;"> BotGPT</span>
+                        </div>
+                        """
+            )
+            appendText(self.chat_field, '\n')
         else:
-            if text != "\nБот: ":
+            if text != "\nBotGPT: ":
                 # (text.strip())
                 self.chat_field_text += f"\nОшибка при запросе к API: {text}\n\n"
                 appendText(self.chat_field, f"\nОшибка при запросе к API: {text}\n\n")
@@ -350,29 +362,38 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def create_chat_widget(self, chat_name, messages):
         new_chat = InsideTabWindow(chat_name)
-        # (messages)
+
         for user_message, bot_message in zip(messages[::2], messages[1::2]):
+            # Сообщение пользователя
             appendHtml(new_chat.chat_field, """
-                <img src="static/user3.jpg" alt="Image" height="40" width="40">
-                """)
-            appendText(new_chat.chat_field, "\nЯ: " + user_message[1] + "\n")
+            <div>
+                <img src="static/user3.jpg" alt="Image" height="40" width="40" style="display: inline-block;">
+                <span style="font-family: 'Arial', sans-serif; font-weight: bold; position: relative; top: -5px;"> You</span>
+            </div>
+            """)
+            appendText(new_chat.chat_field, '\n' + user_message[1] + '\n\n\n')
+
+            # Сообщение бота
             appendHtml(new_chat.chat_field, """
-                <img src="static/gpt5.jpg" alt="Image" height="40" width="40">
-                """)
-            appendText(new_chat.chat_field, "\nБот: " + bot_message[1] + "\n\n")
+            <div>
+                <img src="static/gpt5.jpg" alt="Image" height="40" width="40" style="display: inline-block;">
+                <span style="font-family: 'Arial', sans-serif; font-weight: bold; position: relative; top: -5px;"> BotGPT</span>
+            </div>
+            """)
+
+            appendText(new_chat.chat_field, '\n' + bot_message[1] + '\n\n\n')
             new_chat.chat_field_text += user_message[1] + bot_message[1]
-        # new_chat.chat_field_text = chat
-        # new_chat.chat_field.setText(chat)
+
         self.all_chats_container.append(new_chat)
         return new_chat
 
     def changeTheme(self):
-        global theme
+        global theme, extra
         theme = self.theme_group.checkedAction().text()
-        apply_stylesheet(self, theme=theme)
+        apply_stylesheet(self, theme=theme, extra=extra)
+        textUprising(self, fontsize=12)
 
     def closeEvent(self, event):
-        # Ваш код для сохранения данных в базу данных перед закрытием приложения
         saveSettings2DB(provider, tabIndex, theme, is_summarisation, language)
         event.accept()
 
@@ -389,9 +410,15 @@ def main():
 
     app = QApplication(sys.argv)  # Новый экземпляр QApplication
     app.setWindowIcon(QtGui.QIcon('static/app_logo_cropped.jpg'))
-    apply_stylesheet(app, theme=theme)
+
+    global extra
+    apply_stylesheet(
+        app,
+        theme=theme,
+        extra=extra
+    )
     window = MainWindow()  # Создаём объект класса ExampleApp
-    window.setWindowTitle('GptChat')
+    # textUprising(window, fontsize=12)
     window.resize(1162, 935)
     window.show()  # Показываем окно
     app.exec_()  # и запускаем приложение

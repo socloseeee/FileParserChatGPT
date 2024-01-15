@@ -120,6 +120,13 @@ def appendText(field, text):
     field.setTextCursor(cursor)
 
 
+def textUprising(window, fontsize: int = 12):
+    font = QtGui.QFont()
+    font.setPointSize(fontsize)
+    for elem in window.all_chats_container:
+        elem.chat_field.setFont(font)
+
+
 def appendHtml(field, html):
     cursor = field.textCursor()
     cursor.movePosition(QtGui.QTextCursor.End)
