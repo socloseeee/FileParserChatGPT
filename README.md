@@ -6,22 +6,55 @@
 
 ## Navigation:
 
-1. [Problem](#problem)
+1. [How to install?](#install)
+2. [Problem](#problem)
 2. [Libraries](#libraries)
 3. [What the Program Does](#what-the-program-does)
 4. [Program Overview](#program-overview)
 
-### 1. Problem <a name="problem"></a>
+
+### 1. How to install <a name="install"></a>
+1. Install Python on your operating system if it is not already installed. You can download it from [https://www.python.org/downloads/](https://www.python.org/downloads/).
+
+2. Clone the project.
+
+3. Initialize the virtual environment (venv):
+   - For Windows, open a command prompt and run: 
+     ```
+     python -m venv venv
+     ```
+   - For Linux, open a terminal and run:
+     ```
+     python3 -m venv venv
+     ```
+
+4. Activate the virtual environment:
+   - For Windows, navigate to the virtual environment Scripts folder and run:
+     ```
+     venv\Scripts\activate
+     ```
+   - For Linux, in the terminal, run:
+     ```
+     . ./venv/bin/activate
+     ```
+
+5. Execute the following command to install the required dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+
+### 2. Problem <a name="problem"></a>
 The challenges addressed by this project include:
 - Enabling the use of ChatGPT from a local machine without the need for OpenAPI authentication.
 - Efficiently extracting and summarizing information from text files without having to open them individually.
 
-### 2. Libraries <a name="libraries"></a>
+### 3. Libraries <a name="libraries"></a>
 - [![g4f](https://img.shields.io/badge/g4f-black?style=for-the-badge&logo=openAI&logoColor=white)]("https://pypi.org/project/g4f/") - A library for interfacing with ChatGPT.
 - [![PyQt5](https://img.shields.io/badge/pyqt5-red?style=for-the-badge&logo=qt&logoColor=white)]("https://pypi.org/project/PyQt5") - PyQt5 for building the graphical user interface.
 - [![sqlite3](https://img.shields.io/badge/sqlite3-gold?style=for-the-badge&logo=sqlite&logoColor=black)](https://www.sqlite.org/index.html) - SQLite for managing and storing chat information.
 
-### 3. What the Program Does <a name="what-the-program-does"></a>
+### 4. What the Program Does <a name="what-the-program-does"></a>
 The program is designed to:
 - Parse text files in various formats to generate summarized information about their content:
 ![PDF](https://img.shields.io/badge/PDF-Informational?style=flat&logo=adobe&logoColor=white&color=red)
@@ -40,7 +73,7 @@ The program is designed to:
 - Store information about chats in a structured manner.
 - Provide users with the flexibility to choose the theme or topic of interest.
 
-### 4. Program Overview <a name="program-overview"></a>
+### 5. Program Overview <a name="program-overview"></a>
 
 - **Executable:** ![EXE](https://img.shields.io/badge/EXE-black?style=for-the-badge&logo=windows&logoColor=white)
   
