@@ -43,6 +43,16 @@
    pip install -r requirements.txt
    ```
 
+6. Run main.py file
+   - For Windows:
+     ```
+     python main.py
+     ```
+   - For Linux:
+     ```
+     python3 main.py
+     ```
+
 
 ### 2. Problem <a name="problem"></a>
 The challenges addressed by this project include:
